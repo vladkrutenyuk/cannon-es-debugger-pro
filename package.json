@@ -1,13 +1,11 @@
 {
   "name": "@vladkrutenyuk/cannon-es-debugger-pro",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "source": "src/index.ts",
-  "main": "dist/index.js",
-  "module": "dist/module.js",
-  "types": "dist/types.d.ts",
   "scripts": {
     "build": "rimraf dist & parcel build",
-    "dev": "parcel"
+    "demo": "parcel ./src/demo/index.html --dist-dir demo-build",
+    "demo-build": "rimraf demo-build & parcel build src/demo/index.html --dist-dir demo-build --public-url /demo-build/"
   },
   "author": "Vlad Krutenyuk <vladislove2402@gmail.com> (https://kvy.world)",
   "license": "MIT",
@@ -17,6 +15,9 @@
     "type": "git",
     "url": "https://github.com/vladkrutenyuk/cannon-es-debugger-pro"
   },
+  "main": "dist/index.js",
+  "module": "dist/module.js",
+  "types": "dist/types.d.ts",
   "targets": {
     "main": {
       "optimize": true
@@ -30,13 +31,14 @@
   ],
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "devDependencies": {
-    "parcel": "latest",
     "@parcel/config-default": "latest",
     "@parcel/optimizer-terser": "latest",
     "@parcel/packager-ts": "latest",
+    "@parcel/transformer-typescript-tsc": "latest",
     "@parcel/transformer-typescript-types": "latest",
     "@types/three": "^0.160.0",
     "cannon-es": "^0.20.0",
+    "parcel": "latest",
     "rimraf": "^5.0.5",
     "three": "^0.160.1",
     "typescript": "^5.3.3"

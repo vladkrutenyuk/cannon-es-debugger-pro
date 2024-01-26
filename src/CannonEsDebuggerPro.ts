@@ -46,7 +46,7 @@ export default class CannonEsDebuggerPro {
 		color: 0x00ff00,
 		scale: 1,
 	}
-	private readonly _objs3d: THREE.Object3D[] = []
+	private _objs3d: THREE.Object3D[] = []
 
 	private _geometries = new Map<number, THREE.BufferGeometry>()
 
@@ -280,6 +280,7 @@ export default class CannonEsDebuggerPro {
 	}
 
 	clear() {
+		this._objs3d = []
 		while (this._objsGroup.children.length > 0) {
 			this._objsGroup.remove(this._objsGroup.children[0])
 		}
@@ -293,9 +294,9 @@ export default class CannonEsDebuggerPro {
 		this._isDestroyed = true
 		const parent = this._objsGroup.parent
 		parent?.remove(this._objsGroup)
+		this.clear()
 		this._material.dispose()
 		this._lineMaterial.dispose()
-		this.clear()
 	}
 }
 

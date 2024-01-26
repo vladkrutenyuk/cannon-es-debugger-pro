@@ -26,3 +26,4 @@ dist-ssr
 # parcel
 .parcel-cache
 build
+demo-build

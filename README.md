@@ -7,10 +7,10 @@ This is improved pro debugger for [cannon-es](https://github.com/pmndrs/cannon-e
 It was based on [cannon-es-debugger](https://www.npmjs.com/package/cannon-es-debugger). I wasn't completely satisfied with it so I decided to create a **new fixed and improved version** based on it.
 
 In short:
-- New clean appereance of sphere and box shapes
-- Better types and implementation via class
-- Prevent memory leacking on custom complex shapes creation because of collecting custom geometries and not disposing them
-- Ability to destroy debugger instance and clean memory
+- New pretty appearance of sphere and box shapes to make scene more readable.
+- Better types and implementation via class.
+- Prevent memory leaking on custom complex shapes creation because of collecting custom geometries and not disposing them.
+- Ability to destroy debugger instance and clean memory.
 
 _Read section 'Why use this instead of existed old one?' below in the end of the page._
 
@@ -19,14 +19,14 @@ _Read section 'Why use this instead of existed old one?' below in the end of the
 
 ```bash
 pnpm add @vladkrutenyuk/cannon-es-debugger-pro
-# or use any another package manager (npm, yarn, ...)
+# or via 'npm i ...', 'yarn add ...' and so on
 ```
 
 Make sure you also have `three` and `cannon-es` as dependencies.
 
 ```bash
 pnpm add three cannon-es
-# or use any another package manager (npm, yarn, ...)
+# or via 'npm i ...', 'yarn add ...' and so on
 ```
 
 
@@ -60,7 +60,7 @@ const cannonDebugger = new CannonEsDebuggerPro(root, world, options)
 
 ##### 2. Update
 
-The `update()` method needs to be called after `cannon` physics world's step and before `three.js` render to update state
+The `update()` method needs to be called after `cannon` physics world's step and before `three.js` render to update its state.
 
 ```ts
 const animate = () => {
@@ -93,11 +93,17 @@ cannonDebugger.update() // and now it does nothing
 ## Why use this instead of existed old one? What improvements?
 
 
-#### 1. Typing and implementation
+#### 1. New pretty shapes appereance
+//TODO put images for comparing
+- Sphere looks like 3 perpendicular to each other circle edges. (like sphere colliders in Unity)
+- Box looks like just edge lines of quads without diagonals in them. (like box colliders in Unity)
+- Plane is bigger (200mx200m)
 
+#### 2. Typing and implementation
+- It is implemented as `class` and instance just has its type `CannonEsDebuggerPro` instead of implemention via `function` where instance can be typed only as `ReturnType<...>`.
+- `THREE.Object3D` root instead of `THREE.Scene` scene argument.
 
-🫣 was in `cannon-es-debugger`
-
+🔞 in `cannon-es-debugger`
 
 ```typescript
 function CannonDebugger(scene: THREE.Scene, ...) {
@@ -116,7 +122,7 @@ new CannonDebugger(root, ...) //! TypeError
 ```
 
 
-🥰 now in `@vladkrutenyuk/cannon-es-debugger-pro`
+😎👍 now in `@vladkrutenyuk/cannon-es-debugger-pro`
 
 
 ```typescript
@@ -138,12 +144,11 @@ class AnyYourClass {
 }
 ```
 
-//TODO write points about
-- New clean appereance of sphere and box shapes
-- Prevent memory leacking on custom complex shapes creation because of collecting custom geometries and not disposing them
-- Ability to destroy debugger instance and clean memory
+#### 3. Solved memory issues
+Original `cannon-es-debugger` doesn't clear scene from created meshes and doesn't dispose created geoemtry for comples shape after its removing.
 
-//TODO picture/screenshot with debug objects 3d (sphere and boxes)
+#### 4. Destroying and disposing
+The method `destroy()` is called to remove all created debug 3d objects and dispose eveything created for them (materials, geoemtries).
 
 ##
 ## API
@@ -165,16 +170,23 @@ export class CannonEsDebuggerPro {
     get isDestroyed(): boolean
 
     update(): void
+    clear(): void
     destroy(): void
 }
 ```
 
-where `DebugOptions` is:
+where **`DebugOptions`** is:
 
-- **`color`** - [THREE.ColorRepresentation](https://threejs.org/docs/#api/en/math/Color) argument that sets the wireframe color, defaults to `0x00ff00`
+- `color`
+    * Sets the wireframe color ([THREE.ColorRepresentation](https://threejs.org/docs/#api/en/math/Color)) for debug 3d objects.
+    * Default is 0x00ff00 (green).
 
-- **`scale`** - scale factor for all the wireframe meshes, defaults to 1
+- `scale`
+    * Scale factor for all debug 3d objects.
+    * Default is 1.
 
-- **`onInit`** - callback function that runs once, right after a new wireframe mesh is added
+- `onInit`
+    * Callback function that runs once, right after a new debug 3d object is added.
 
-- **`onUpdate`** - callback function that runs on every subsequent animation frame
+- `onUpdate`
+    * Callback function that runs on every subsequent animation frame.
