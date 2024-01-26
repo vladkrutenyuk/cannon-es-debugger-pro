@@ -1,54 +1,43 @@
 {
   "name": "@vladkrutenyuk/cannon-es-debugger-pro",
   "version": "1.0.0",
+  "source": "src/index.ts",
+  "main": "dist/index.js",
+  "module": "dist/module.js",
+  "types": "dist/types.d.ts",
   "scripts": {
-    "build": "microbundle",
-    "dev": "microbundle watch"
+    "build": "rimraf dist & parcel build",
+    "dev": "parcel"
   },
-  "author": "Vlad Krutenyuk (kvy)",
-  "license": "ISC",
-  "description": "",
+  "author": "Vlad Krutenyuk <vladislove2402@gmail.com> (https://kvy.world)",
+  "license": "MIT",
+  "description": "This is improved pro debugger for 'cannon-es' with 'three' to visualize all bodies and its shapes of physics world.",
   "homepage": "https://github.com/vladkrutenyuk/cannon-es-debugger-pro",
   "repository": {
     "type": "git",
     "url": "https://github.com/vladkrutenyuk/cannon-es-debugger-pro"
   },
-  "keywords": [
-    "three",
-    "threejs",
-    "3d",
-    "graphics",
-    "cg",
-    "debug",
-    "debugger",
-    "cannon-es",
-    "cannon-es-debugger",
-    "cannon",
-    "cannones",
-    "three physics",
-    "physics",
-    "kvy",
-    "vlad krutenyuk",
-    "vladkrutenyuk"
-  ],
-  "type": "module",
-  "source": "src/index.ts",
-  "exports": {
-    "types": "./dist/index.d.ts",
-    "require": "./dist/index.cjs",
-    "default": "./dist/index.esm.js"
+  "targets": {
+    "main": {
+      "optimize": true
+    },
+    "module": {
+      "optimize": true
+    }
   },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.esm.js",
-  "unpkg": "./dist/index.umd.js",
-  "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
+  "browserslist": "> 0.5%, last 2 versions, not dead",
   "devDependencies": {
+    "parcel": "latest",
+    "@parcel/config-default": "latest",
+    "@parcel/optimizer-terser": "latest",
+    "@parcel/packager-ts": "latest",
+    "@parcel/transformer-typescript-types": "latest",
     "@types/three": "^0.160.0",
     "cannon-es": "^0.20.0",
-    "microbundle": "^0.15.1",
+    "rimraf": "^5.0.5",
     "three": "^0.160.1",
     "typescript": "^5.3.3"
   },
@@ -61,5 +50,30 @@
     "typescript": {
       "optional": true
     }
-  }
+  },
+  "keywords": [
+    "three",
+    "threejs",
+    "three.js",
+    "javascript",
+    "3d",
+    "graphics",
+    "cg",
+    "webgl",
+    "webgl2",
+    "webcpu",
+    "debug",
+    "debugger",
+    "cannon-es",
+    "cannon-es-debugger",
+    "cannon",
+    "cannones",
+    "cannon.js",
+    "three physics",
+    "physics",
+    "kvy",
+    "vlad krutenyuk",
+    "vladkrutenyuk",
+    "wireframe"
+  ]
 }

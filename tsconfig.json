@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+      "target": "esnext",        // Компилировать код в последнюю версию ECMAScript
+      "module": "esnext",        // Использовать систему модулей ECMAScript
+      "lib": ["dom", "esnext"],  // Библиотеки, которые будут доступны во время компиляции
+      "declaration": true,       // Генерировать файлы d.ts для TypeScript
+      "outDir": "./dist",        // Папка для скомпилированных файлов
+      "strict": true,            // Включить строгие проверки типов
+      "esModuleInterop": true,   // Разрешить интероперабельность с модулями ES6
+      "moduleResolution": "node",// Разрешение модулей как в Node.js
+      "forceConsistentCasingInFileNames": true, // Требовать согласованность регистра в именах файлов
+      "resolveJsonModule": true, // Разрешить импорт JSON модулей
+      "isolatedModules": true,   // Убедитесь, что каждый файл может быть транспилирован без учета других файлов
+      "noEmitOnError": true      // Не генерировать выходные файлы, если есть ошибки
+    },
+    "include": [
+      "src/**/*" // Указать, какие файлы включить в компиляцию
+    ],
+    "exclude": [
+      "node_modules", // Исключить папку node_modules
+      "dist"          // Исключить папку dist
+    ]
+  }

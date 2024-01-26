@@ -14,10 +14,25 @@ const _planeGeometry = new THREE.PlaneGeometry(200, 200, 40, 40)
 _planeGeometry.translate(0, 0, 0.0001)
 
 type ComplexShape = CANNON.Shape & { geometryId?: number }
-export type DebugOptions = {
+
+export interface DebugOptions {
+	/**
+	 * Sets the wireframe color for debug 3d objects.
+	 * Default is 0x00ff00 (green)
+	 */
 	color?: THREE.ColorRepresentation
+	/**
+	 * Scale factor for all debug 3d objects.
+	 * Default is 1
+	 */
 	scale?: number
+	/**
+	 * Callback function that runs once, right after a new debug 3d object is added.
+	 */
 	onInit?: (body: CANNON.Body, obj3d: THREE.Object3D, shape: CANNON.Shape) => void
+	/**
+	 * Callback function that runs on every subsequent animation frame.
+	 */
 	onUpdate?: (body: CANNON.Body, obj3d: THREE.Object3D, shape: CANNON.Shape) => void
 }
 
@@ -25,7 +40,7 @@ export default class CannonEsDebuggerPro {
 	private readonly _material: THREE.MeshBasicMaterial
 	private readonly _lineMaterial: THREE.LineBasicMaterial
 	private readonly _world: CANNON.World
-	private readonly _root: THREE.Object3D
+	private readonly _objsGroup: THREE.Group
 
 	private readonly _options: DebugOptions = {
 		color: 0x00ff00,
@@ -44,7 +59,8 @@ export default class CannonEsDebuggerPro {
 	constructor(root: THREE.Object3D, world: CANNON.World, options: DebugOptions = {}) {
 		this._options = options
 		this._world = world
-		this._root = root
+		this._objsGroup = new THREE.Group()
+		root.add(this._objsGroup)
 		const color = this._options.color ?? 0x00ff00
 		this._material = new THREE.MeshBasicMaterial({
 			color,
@@ -109,7 +125,7 @@ export default class CannonEsDebuggerPro {
 			}
 		}
 		obj3d = obj3d ?? new THREE.Object3D()
-		this._root.add(obj3d)
+		this._objsGroup.add(obj3d)
 		return obj3d
 	}
 
@@ -208,7 +224,7 @@ export default class CannonEsDebuggerPro {
 	}
 
 	private removeObj3d(obj3d: THREE.Object3D) {
-		this._root.remove(obj3d)
+		this._objsGroup.remove(obj3d)
 		if (!isMesh(obj3d) || !obj3d.userData.isComplexShapeMesh) return
 
 		const geometry = this._geometries.get(obj3d.geometry.id)
@@ -258,21 +274,28 @@ export default class CannonEsDebuggerPro {
 		for (let i = obj3dIndex; i < this._objs3d.length; i++) {
 			const obj3d = this._objs3d[i]
 			if (obj3d) this.removeObj3d(obj3d)
-			//TODO dispose geometries
 		}
 
 		this._objs3d.length = obj3dIndex
 	}
 
-	destroy() {
-		this._isDestroyed = true
-		const parent = this._root.parent
-		parent?.remove(this._root)
-		this._material.dispose()
-		this._lineMaterial.dispose()
+	clear() {
+		while (this._objsGroup.children.length > 0) {
+			this._objsGroup.remove(this._objsGroup.children[0])
+		}
 		this._geometries.forEach((value) => {
 			value.dispose()
 		})
+		this._geometries.clear()
+	}
+
+	destroy() {
+		this._isDestroyed = true
+		const parent = this._objsGroup.parent
+		parent?.remove(this._objsGroup)
+		this._material.dispose()
+		this._lineMaterial.dispose()
+		this.clear()
 	}
 }
 
