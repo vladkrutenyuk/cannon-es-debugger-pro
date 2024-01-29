@@ -11,7 +11,7 @@ const _q0 = new CANNON.Quaternion()
 const _circleEdgeGeometry = new CircleEdgeGeometry(1)
 const _boxGeometry = new THREE.BoxGeometry(1, 1, 1)
 const _boxEdgesGeometry = new THREE.EdgesGeometry(_boxGeometry)
-const _planeGeometry = new THREE.PlaneGeometry(200, 200, 40, 40)
+const _planeGeometry = new THREE.PlaneGeometry(200, 200, 20, 20)
 _planeGeometry.translate(0, 0, 0.0001)
 
 type ComplexShape = CANNON.Shape & { geometryId?: number }
