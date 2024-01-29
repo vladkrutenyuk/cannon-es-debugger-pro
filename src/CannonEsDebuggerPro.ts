@@ -46,7 +46,7 @@ export default class CannonEsDebuggerPro {
 	}
 
 	/**
- 	 * This is improved pro debugger for [cannon-es](https://github.com/pmndrs/cannon-es)
+	 * This is improved pro debugger for [cannon-es](https://github.com/pmndrs/cannon-es)
 	 * with [three](https://github.com/pmndrs/cannon-es) to visualize all bodies and its shapes of physics world.
 	 * @param {THREE.Object3D} root - any THREE.Object3D root which will contain debug 3d objects of this instance.
 	 * @param {CANNON.World} world - Physics `cannon-es` world you need to debug.
@@ -81,8 +81,9 @@ export default class CannonEsDebuggerPro {
 		this._material = new THREE.MeshBasicMaterial({
 			color,
 			wireframe: true,
+			toneMapped: false,
 		})
-		this._lineMaterial = new THREE.LineBasicMaterial({ color })
+		this._lineMaterial = new THREE.LineBasicMaterial({ color, toneMapped: false })
 	}
 
 	private createObj3d(shape: CANNON.Shape): THREE.Object3D {
@@ -239,7 +240,7 @@ export default class CannonEsDebuggerPro {
 	}
 
 	/**
-	 * @description The `update()` method needs to be called after `cannon` physics world's step 
+	 * @description The `update()` method needs to be called after `cannon` physics world's step
 	 * and before `three.js` render to update its state.
 	 * @example
 	 * const animate = () => {
@@ -333,7 +334,7 @@ export default class CannonEsDebuggerPro {
 	}
 
 	/**
-	 * @description The method `destroy()` is called to remove all created debug 3d objects and 
+	 * @description The method `destroy()` is called to remove all created debug 3d objects and
 	 * dispose all created geometries for complex shapes and shared materials of this instance.
 	 * After calling `destroy()` the method `update()` won't work anymore and property (read-only) `isDestroyed` will become `true`.
 	 */

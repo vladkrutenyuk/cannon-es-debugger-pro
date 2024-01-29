@@ -16,9 +16,6 @@ In short:
 
 ## Installation 🤓
 
-**Low size!**
-Final compiled `/dist/index.js` file size is **5Kb** 😳
-
 ```bash
 pnpm add @vladkrutenyuk/cannon-es-debugger-pro
 # or via 'npm i ...', 'yarn add ...' and so on
@@ -126,7 +123,7 @@ cannonDebugger.setVisible(true)
 // implementation
 function CannonDebugger(scene: THREE.Scene, ...) { ... }
 
-// so, we need this to create typed variable:
+// thus, we need this to create typed variable:
 cannonDebugger: ReturnType<typeof CannonDebugger>
 
 this.cannonDebugger = new CannonDebugger(...)
@@ -148,7 +145,7 @@ class CannonEsDebuggerPro {
     ...
 }
 
-// example
+// thus
 class AnyYourClass {
     cannonDebuggerPro: CannonEsDebuggerPro
 
