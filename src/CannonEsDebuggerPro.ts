@@ -2,6 +2,7 @@ import * as CANNON from "cannon-es"
 import * as THREE from "three"
 import { DebugSphere } from "./helpers/DebugSphere"
 import { CircleEdgeGeometry } from "./helpers/CircleEdgeGeometry"
+import { DebugOptions } from "./DebugOptions"
 
 const _v0 = new CANNON.Vec3()
 const _v1 = new CANNON.Vec3()
@@ -15,27 +16,9 @@ _planeGeometry.translate(0, 0, 0.0001)
 
 type ComplexShape = CANNON.Shape & { geometryId?: number }
 
-export interface DebugOptions {
-	/**
-	 * Sets the wireframe color for debug 3d objects.
-	 * Default is 0x00ff00 (green)
-	 */
-	color?: THREE.ColorRepresentation
-	/**
-	 * Scale factor for all debug 3d objects.
-	 * Default is 1
-	 */
-	scale?: number
-	/**
-	 * Callback function that runs once, right after a new debug 3d object is added.
-	 */
-	onInit?: (body: CANNON.Body, obj3d: THREE.Object3D, shape: CANNON.Shape) => void
-	/**
-	 * Callback function that runs on every subsequent animation frame.
-	 */
-	onUpdate?: (body: CANNON.Body, obj3d: THREE.Object3D, shape: CANNON.Shape) => void
-}
-
+/**
+ * This is improved pro debugger for [cannon-es](https://github.com/pmndrs/cannon-es) with [three](https://github.com/pmndrs/cannon-es) to visualize all bodies and its shapes of physics world.
+ */
 export default class CannonEsDebuggerPro {
 	private readonly _material: THREE.MeshBasicMaterial
 	private readonly _lineMaterial: THREE.LineBasicMaterial
@@ -50,12 +33,45 @@ export default class CannonEsDebuggerPro {
 
 	private _geometries = new Map<number, THREE.BufferGeometry>()
 
+	private _isVisible = true
+
+	public get isVisible() {
+		return this._isVisible
+	}
+
 	private _isDestroyed = false
 
 	public get isDestroyed() {
 		return this._isDestroyed
 	}
 
+	/**
+ 	 * This is improved pro debugger for [cannon-es](https://github.com/pmndrs/cannon-es)
+	 * with [three](https://github.com/pmndrs/cannon-es) to visualize all bodies and its shapes of physics world.
+	 * @param {THREE.Object3D} root - any THREE.Object3D root which will contain debug 3d objects of this instance.
+	 * @param {CANNON.World} world - Physics `cannon-es` world you need to debug.
+	 * @param {DebugOptions | undefined} options - optional.
+	 * @param {THREE.ColorRepresentation} options.color - Sets the wireframe color for debug 3d objects. Default is `0x00ff00` (green).
+	 * @param {number} options.scale - Scale factor for all debug 3d objects. Default is `1`.
+	 * @param {function} options.onInit - Callback function that runs once, right after a new debug 3d object is added.
+	 * @param {function} options.onUpdate - Callback function that runs on every subsequent animation frame.
+	 * @example
+	 * import * as THREE from 'three'
+	 * import * as CANNON from 'cannon-es'
+	 * import { CannonEsDebuggerPro } from '@vladkrutenyuk/cannon-es-debugger-pro'
+	 *
+	 * const world = new CANNON.World()
+	 * const scene = new THREE.Scene()
+	 *
+	 * const root = new THREE.Group() // or any another THREE.Object3D like
+	 * scene.add(root)
+	 *
+	 * // `options` is optional arg ;)
+	 * const options = {
+	 * 	color: 0xe60c0c // or 'rgb(228, 14, 88)', '#e60c0c', 'red'
+	 * }
+	 * const cannonDebugger = new CannonEsDebuggerPro(root, world, options)
+	 */
 	constructor(root: THREE.Object3D, world: CANNON.World, options: DebugOptions = {}) {
 		this._options = options
 		this._world = world
@@ -102,25 +118,14 @@ export default class CannonEsDebuggerPro {
 			}
 			case CONVEXPOLYHEDRON: {
 				obj3d = this.createComplexShapeMesh(createConvexPolyhedronGeometry, shape)
-				// const geometry = createConvexPolyhedronGeometry(
-				// 	shape as CANNON.ConvexPolyhedron
-				// )
-				// obj3d = new THREE.Mesh(geometry, material)
-				// ;(shape as ComplexShape).geometryId = geometry.id
 				break
 			}
 			case TRIMESH: {
 				obj3d = this.createComplexShapeMesh(createTrimeshGeometry, shape)
-				// const geometry = createTrimeshGeometry(shape as CANNON.Trimesh)
-				// obj3d = new THREE.Mesh(geometry, material)
-				// ;(shape as ComplexShape).geometryId = geometry.id
 				break
 			}
 			case HEIGHTFIELD: {
 				obj3d = this.createComplexShapeMesh(createHeightfieldGeometry, shape)
-				// const geometry = createHeightfieldGeometry(shape as CANNON.Heightfield)
-				// obj3d = new THREE.Mesh(geometry, material)
-				// ;(shape as ComplexShape).geometryId = geometry.id
 				break
 			}
 		}
@@ -233,6 +238,19 @@ export default class CannonEsDebuggerPro {
 		geometry.dispose()
 	}
 
+	/**
+	 * @description The `update()` method needs to be called after `cannon` physics world's step 
+	 * and before `three.js` render to update its state.
+	 * @example
+	 * const animate = () => {
+	 * 	requestAnimationFrame(animate)
+	 *
+	 * 	world.step(timeStep) // Update cannon-es physics
+	 * 	cannonDebugger.update() // Update the CannonEsDebuggerPro
+	 * 	renderer.render(scene, camera) // Render the three.js scene
+	 * }
+	 * animate()
+	 */
 	update() {
 		if (this._isDestroyed) return
 
@@ -279,6 +297,30 @@ export default class CannonEsDebuggerPro {
 		this._objs3d.length = obj3dIndex
 	}
 
+	setColor(color: THREE.ColorRepresentation) {
+		this._material.color.set(color)
+		this._lineMaterial.color.set(color)
+		this._material.needsUpdate = true
+		this._lineMaterial.needsUpdate = true
+		return this
+	}
+
+	/**
+	 * @param {boolean} isVisible
+	 * @description Use to hide or show back debugs. It doesn't remove and dispose anything.
+	 */
+	setVisible(isVisible: boolean) {
+		this._isVisible = isVisible
+		this._objsGroup.visible = isVisible
+		return this
+	}
+
+	/**
+	 * @description Removes all debug 3d objects and does `dispose` for all created geometries
+	 * of complex shapes. Shared materials won't be disposed and the `update()` method will be still working.
+	 * You are able to continue using this instance after calling the method.
+	 * If you want to destroy instance fully not to use it anymore then use `destroy()`.
+	 */
 	clear() {
 		this._objs3d = []
 		while (this._objsGroup.children.length > 0) {
@@ -290,6 +332,11 @@ export default class CannonEsDebuggerPro {
 		this._geometries.clear()
 	}
 
+	/**
+	 * @description The method `destroy()` is called to remove all created debug 3d objects and 
+	 * dispose all created geometries for complex shapes and shared materials of this instance.
+	 * After calling `destroy()` the method `update()` won't work anymore and property (read-only) `isDestroyed` will become `true`.
+	 */
 	destroy() {
 		this._isDestroyed = true
 		const parent = this._objsGroup.parent
