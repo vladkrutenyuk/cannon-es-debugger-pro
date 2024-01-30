@@ -71,14 +71,21 @@ animate()
 
 ## Why use this instead of existed old one? What improvements? 🤩😍
 
-> "existed old one" means [cannon-es-debugger](https://www.npmjs.com/package/cannon-es-debugger) package
+> _"...existed old one" means [cannon-es-debugger](https://www.npmjs.com/package/cannon-es-debugger) package._
 
 
 ### 1. New pretty shapes appereance
-//TODO put images for comparing
-- Sphere looks like 3 perpendicular to each other circle edges. (like sphere colliders in Unity)
-- Box looks like just edge lines of quads without diagonals in them. (like box colliders in Unity)
-- Plane is bigger (200mx200m)
+_See image in the top of the page._
+#### Sphere
+Custom shematic visualization of sphere shape instead of mesh with default icosahedron geometry.
+Thus, now it's combination of 3 perpendicular to each other edge-circles for each dimension. Looks like sphere colliders in Unity.
+#### Box
+Only quad edges without in-quad diagonales. Grid-like style.
+#### Plane
+Only quad edges without in-quad diagonales. Grid-like style.
+Bigger size (100x100 instead of 10x10) because physical plane is infinite.
+#### Heightfield
+Only quad edges without in-quad diagonales. Grid-like style.
 
 ### 2. Solved memory issues
 Original `cannon-es-debugger` doesn't clear scene from created meshes and doesn't dispose created geometry for complex shape after its removing.
