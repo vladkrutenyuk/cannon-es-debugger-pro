@@ -12,8 +12,8 @@ function init(root: HTMLDivElement) {
 	scene.fog = new THREE.Fog(0x000000, 500, 1000)
 	// scene.background = new THREE.Color(0xaaaaaa)
 	const camera = new THREE.PerspectiveCamera()
-	camera.far = 30
-	camera.near =2
+	camera.far = 100
+	camera.near = 2
 	camera.position.set(5, 4, 5)
 	camera.lookAt(new THREE.Vector3())
 
@@ -25,7 +25,7 @@ function init(root: HTMLDivElement) {
 	renderer.shadowMap.enabled = true
 	renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
-	renderer.setPixelRatio(window.devicePixelRatio)
+	renderer.setPixelRatio(2)
 	renderer.setClearColor(scene.fog.color)
 	root.append(renderer.domElement)
 	renderer.domElement.tabIndex = 0
@@ -83,6 +83,10 @@ function init(root: HTMLDivElement) {
 	const autoUpdateObj = {
 		autoUpdate: true,
 	}
+
+	const axes = new THREE.AxesHelper(100)
+	axes.position.set(0.01, 0.01, 0.01)
+	scene.add(axes)
 
 	// bodies
 
@@ -216,7 +220,7 @@ function addSphere(props: {
 	scene: THREE.Scene
 	callback?: (body: CANNON.Body, mesh: THREE.Mesh) => void
 }) {
-	const size = 0.5
+	const size = 0.7
 
 	// Physics
 	const body = new CANNON.Body({ mass })
@@ -285,7 +289,7 @@ function addTrimesh(props: {
 	props.world.addBody(body)
 
 	// Graphics
-	const geometry = new THREE.TorusGeometry(radius, tube, radialSegments, 100)
+	const geometry = new THREE.TorusGeometry(radius, tube, radialSegments, 16)
 	const mesh = new THREE.Mesh(geometry, material)
 	// position and quaternion of the mesh are set by updateMeshPositions...
 	mesh.castShadow = true

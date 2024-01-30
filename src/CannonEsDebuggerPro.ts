@@ -3,6 +3,7 @@ import * as THREE from "three"
 import { DebugSphere } from "./helpers/DebugSphere"
 import { CircleEdgeGeometry } from "./helpers/CircleEdgeGeometry"
 import { DebugOptions } from "./DebugOptions"
+import { PlaneGridGeometry } from "./helpers/PlaneGridGeometry"
 
 const _v0 = new CANNON.Vec3()
 const _v1 = new CANNON.Vec3()
@@ -11,13 +12,13 @@ const _q0 = new CANNON.Quaternion()
 const _circleEdgeGeometry = new CircleEdgeGeometry(1)
 const _boxGeometry = new THREE.BoxGeometry(1, 1, 1)
 const _boxEdgesGeometry = new THREE.EdgesGeometry(_boxGeometry)
-const _planeGeometry = new THREE.PlaneGeometry(200, 200, 20, 20)
-_planeGeometry.translate(0, 0, 0.0001)
+const _planeGridGeometry = new PlaneGridGeometry(100, 20, 0.001)
 
 type ComplexShape = CANNON.Shape & { geometryId?: number }
 
 /**
- * This is improved pro debugger for [cannon-es](https://github.com/pmndrs/cannon-es) with [three](https://github.com/pmndrs/cannon-es) to visualize all bodies and its shapes of physics world.
+ * This is improved pro debugger for [cannon-es](https://github.com/pmndrs/cannon-es)
+ * with [three](https://github.com/pmndrs/cannon-es) to visualize all bodies and its shapes of physics world.
  */
 export default class CannonEsDebuggerPro {
 	private readonly _material: THREE.MeshBasicMaterial
@@ -102,49 +103,57 @@ export default class CannonEsDebuggerPro {
 				break
 			}
 			case PLANE: {
-				obj3d = new THREE.Mesh(_planeGeometry, material)
+				obj3d = new THREE.LineSegments(_planeGridGeometry, this._lineMaterial)
 				break
 			}
 			case CYLINDER: {
-				const shapeCyl = shape as CANNON.Cylinder
 				const geometry = new THREE.CylinderGeometry(
-					shapeCyl.radiusTop,
-					shapeCyl.radiusBottom,
-					shapeCyl.height,
-					shapeCyl.numSegments
+					(shape as CANNON.Cylinder).radiusTop,
+					(shape as CANNON.Cylinder).radiusBottom,
+					(shape as CANNON.Cylinder).height,
+					(shape as CANNON.Cylinder).numSegments
 				)
 				obj3d = new THREE.Mesh(geometry, material)
-				;(shape as ComplexShape).geometryId = geometry.id
+				this.registerComplexShapeWithObj3d(obj3d, shape, geometry)
 				break
 			}
 			case CONVEXPOLYHEDRON: {
-				obj3d = this.createComplexShapeMesh(createConvexPolyhedronGeometry, shape)
+				const geometry = createConvexPolyhedronGeometry(
+					shape as CANNON.ConvexPolyhedron
+				)
+				obj3d = new THREE.Mesh(geometry, this._material)
+				this.registerComplexShapeWithObj3d(obj3d, shape, geometry)
 				break
 			}
 			case TRIMESH: {
-				obj3d = this.createComplexShapeMesh(createTrimeshGeometry, shape)
+				const geometry = createTrimeshGeometry(shape as CANNON.Trimesh)
+				obj3d = new THREE.Mesh(geometry, this._material)
+				this.registerComplexShapeWithObj3d(obj3d, shape, geometry)
 				break
 			}
 			case HEIGHTFIELD: {
-				obj3d = this.createComplexShapeMesh(createHeightfieldGeometry, shape)
+				const geometry = createHeightfieldGeometry(shape as CANNON.Heightfield)
+				obj3d = new THREE.LineSegments(geometry, this._lineMaterial)
+				this.registerComplexShapeWithObj3d(obj3d, shape, geometry)
 				break
 			}
 		}
-		obj3d = obj3d ?? new THREE.Object3D()
-		this._objsGroup.add(obj3d)
-		return obj3d
+
+		if (obj3d) {
+			obj3d.userData.shapeType = shape.type
+			this._objsGroup.add(obj3d)
+		}
+		return obj3d ?? new THREE.Object3D()
 	}
 
-	private createComplexShapeMesh<TShape extends CANNON.Shape>(
-		fn: (shape: TShape) => THREE.BufferGeometry,
-		shape: CANNON.Shape
-	): THREE.Mesh {
-		const geometry = fn(shape as TShape)
-		const mesh = new THREE.Mesh(geometry, this._material)
+	private registerComplexShapeWithObj3d(
+		obj3d: THREE.Object3D,
+		shape: CANNON.Shape,
+		geometry: THREE.BufferGeometry
+	) {
 		;(shape as ComplexShape).geometryId = geometry.id
 		this._geometries.set(geometry.id, geometry)
-		mesh.userData.isComplexShapeMesh = true
-		return mesh
+		obj3d.userData.isComplexShapeObj3d = true
 	}
 
 	private scaleObj3d(obj3d: THREE.Object3D, shape: CANNON.Shape | ComplexShape): void {
@@ -193,28 +202,15 @@ export default class CannonEsDebuggerPro {
 		shape: CANNON.Shape | ComplexShape
 	): boolean {
 		if (!obj3d) return false
-		if (!isMesh(obj3d)) {
+		if (obj3d.userData.isComplexShapeObj3d && hasGeometry(obj3d)) {
 			return (
-				(obj3d instanceof DebugSphere &&
-					shape.type === CANNON.Shape.types.SPHERE) ||
-				(obj3d instanceof THREE.LineSegments &&
-					shape.type === CANNON.Shape.types.BOX)
+				obj3d.userData.shapeType === shape.type &&
+				obj3d.geometry.id === (shape as ComplexShape).geometryId
 			)
 		}
-		const { geometry } = obj3d
-		return (
-			(geometry instanceof THREE.PlaneGeometry &&
-				shape.type === CANNON.Shape.types.PLANE) ||
-			(geometry.id === (shape as ComplexShape).geometryId &&
-				shape.type === CANNON.Shape.types.CYLINDER) ||
-			(geometry.id === (shape as ComplexShape).geometryId &&
-				shape.type === CANNON.Shape.types.CONVEXPOLYHEDRON) ||
-			(geometry.id === (shape as ComplexShape).geometryId &&
-				shape.type === CANNON.Shape.types.TRIMESH) ||
-			(geometry.id === (shape as ComplexShape).geometryId &&
-				shape.type === CANNON.Shape.types.HEIGHTFIELD)
-		)
+		return obj3d.userData.shapeType === shape.type
 	}
+
 	private updateObj3d(index: number, shape: CANNON.Shape | ComplexShape): boolean {
 		let obj3d = this._objs3d[index]
 		let didCreateNewObj3d = false
@@ -231,12 +227,10 @@ export default class CannonEsDebuggerPro {
 
 	private removeObj3d(obj3d: THREE.Object3D) {
 		this._objsGroup.remove(obj3d)
-		if (!isMesh(obj3d) || !obj3d.userData.isComplexShapeMesh) return
+		if (!hasGeometry(obj3d) || !obj3d.userData.isComplexShapeObj3d) return
 
-		const geometry = this._geometries.get(obj3d.geometry.id)
-		if (!geometry) return
 		this._geometries.delete(obj3d.geometry.id)
-		geometry.dispose()
+		obj3d.geometry.dispose()
 	}
 
 	/**
@@ -401,31 +395,31 @@ function createConvexPolyhedronGeometry(
 
 function createHeightfieldGeometry(shape: CANNON.Heightfield): THREE.BufferGeometry {
 	const geometry = new THREE.BufferGeometry()
-	const s = shape.elementSize || 1 // assumes square heightfield, else i*x, j*y
-	const positions = shape.data.flatMap((row, i) =>
-		row.flatMap((z, j) => [i * s, j * s, z])
-	)
-	const indices: number[] = []
+	const s = shape.elementSize || 1
+	const vertices = [] as number[]
 
-	for (let xi = 0; xi < shape.data.length - 1; xi++) {
-		for (let yi = 0; yi < shape.data[xi].length - 1; yi++) {
-			const stride = shape.data[xi].length
-			const index = xi * stride + yi
-			indices.push(index + 1, index + stride, index + stride + 1)
-			indices.push(index + stride, index + 1, index)
+	for (let xi = 0; xi < shape.data.length; xi++) {
+		for (let yi = 0; yi < shape.data[xi].length; yi++) {
+			if (xi < shape.data.length - 1) {
+				// horiz
+				vertices.push(xi * s, yi * s, shape.data[xi][yi])
+				vertices.push((xi + 1) * s, yi * s, shape.data[xi + 1][yi])
+			}
+			if (yi < shape.data[xi].length - 1) {
+				// vetical
+				vertices.push(xi * s, yi * s, shape.data[xi][yi])
+				vertices.push(xi * s, (yi + 1) * s, shape.data[xi][yi + 1])
+			}
 		}
 	}
 
-	geometry.setIndex(indices)
-	geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3))
-	geometry.computeBoundingSphere()
-	geometry.computeVertexNormals()
+	const float32Array = new Float32Array(vertices)
+	geometry.setAttribute("position", new THREE.Float32BufferAttribute(float32Array, 3))
 	return geometry
 }
 
-function isMesh<
-	TMat extends THREE.Material | THREE.Material[],
-	TGeom extends THREE.BufferGeometry = THREE.BufferGeometry
->(obj: THREE.Object3D): obj is THREE.Mesh<TGeom, TMat> {
-	return (obj as THREE.Mesh).isMesh || obj.type === "Mesh"
+function hasGeometry<TObject3D extends THREE.Object3D>(
+	obj: TObject3D
+): obj is TObject3D & { geometry: THREE.BufferGeometry } {
+	return obj.hasOwnProperty("geometry")
 }
