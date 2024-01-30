@@ -8,12 +8,12 @@ export class DebugSphere extends THREE.Object3D {
 	constructor(material: THREE.LineBasicMaterial, geometry: CircleEdgeGeometry) {
 		super()
 
-		const circle1 = new THREE.LineLoop(geometry, material)
+		const circle1 = new THREE.LineSegments(geometry, material)
 
-		const circle2 = new THREE.LineLoop(geometry, material)
+		const circle2 = new THREE.LineSegments(geometry, material)
 		circle2.rotateX(Math.PI * 0.5)
 
-		const circle3 = new THREE.LineLoop(geometry, material)
+		const circle3 = new THREE.LineSegments(geometry, material)
 		circle3.rotateX(Math.PI * 0.5)
 		circle3.rotateY(Math.PI * 0.5)
 
