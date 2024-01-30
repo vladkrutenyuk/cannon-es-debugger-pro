@@ -1,17 +1,17 @@
 import * as CANNON from "cannon-es"
 import * as THREE from "three"
-import { DebugSphere } from "./helpers/DebugSphere"
-import { CircleEdgeGeometry } from "./helpers/CircleEdgeGeometry"
 import { DebugOptions } from "./DebugOptions"
 import { PlaneGridGeometry } from "./helpers/PlaneGridGeometry"
+import { SphereShapeGeometry } from "./helpers/SphereShapeGeometry"
 
 const _v0 = new CANNON.Vec3()
 const _v1 = new CANNON.Vec3()
 const _v2 = new CANNON.Vec3()
 const _q0 = new CANNON.Quaternion()
-const _circleEdgeGeometry = new CircleEdgeGeometry(1)
+const _sphereShapeGeometry = new SphereShapeGeometry(1)
 const _boxGeometry = new THREE.BoxGeometry(1, 1, 1)
 const _boxEdgesGeometry = new THREE.EdgesGeometry(_boxGeometry)
+_boxGeometry.dispose()
 const _planeGridGeometry = new PlaneGridGeometry(100, 20, 0.001)
 
 type ComplexShape = CANNON.Shape & { geometryId?: number }
@@ -95,7 +95,7 @@ export default class CannonEsDebuggerPro {
 		const material = this._material
 		switch (shape.type) {
 			case SPHERE: {
-				obj3d = new DebugSphere(this._lineMaterial, _circleEdgeGeometry)
+				obj3d = new THREE.LineSegments(_sphereShapeGeometry, this._lineMaterial)
 				break
 			}
 			case BOX: {
