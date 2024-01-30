@@ -6,7 +6,7 @@ This is improved pro debugger for [cannon-es](https://github.com/pmndrs/cannon-e
 It was based on [cannon-es-debugger](https://www.npmjs.com/package/cannon-es-debugger). I wasn't completely satisfied with it so I decided to create a **new fixed and improved version** based on it.
 
 
-![Demo screenshot of @vladkrutenyuk/cannon-es-debugger-pro](https://imgur.com/YJ6Q33v)
+![Demo screenshot of @vladkrutenyuk/cannon-es-debugger-pro](https://i.imgur.com/YJ6Q33v.png)
 
 In short:
 - [x] New pretty appearance of sphere, box and plane shapes to make scene more readable.
