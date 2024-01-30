@@ -1,10 +1,12 @@
 # @vladkrutenyuk/cannon-es-debugger-pro
 
-<!-- [![Demo Image](https://i.imgur.com/2Bf8KfJ.png)](https://pmndrs.github.io/cannon-es-debugger/) -->
 
 This is improved pro debugger for [cannon-es](https://github.com/pmndrs/cannon-es) with [three](https://github.com/pmndrs/cannon-es) to visualize all bodies and its shapes of physics world.
 
 It was based on [cannon-es-debugger](https://www.npmjs.com/package/cannon-es-debugger). I wasn't completely satisfied with it so I decided to create a **new fixed and improved version** based on it.
+
+
+![Demo screenshot of @vladkrutenyuk/cannon-es-debugger-pro](https://imgur.com/YJ6Q33v)
 
 In short:
 - [x] New pretty appearance of sphere, box and plane shapes to make scene more readable.

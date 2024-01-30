@@ -11,7 +11,7 @@ function init(root: HTMLDivElement) {
 	const scene = new THREE.Scene()
 	scene.fog = new THREE.Fog(0x000000, 500, 1000)
 	// scene.background = new THREE.Color(0xaaaaaa)
-	const camera = new THREE.PerspectiveCamera()
+	const camera = new THREE.PerspectiveCamera(30)
 	camera.far = 100
 	camera.near = 2
 	camera.position.set(5, 4, 5)
@@ -21,11 +21,15 @@ function init(root: HTMLDivElement) {
 	const renderer = new THREE.WebGLRenderer({
 		antialias: true,
 		logarithmicDepthBuffer: true,
+		powerPreference: "high-performance",
+		precision: "highp",
+		preserveDrawingBuffer: true
 	})
 	renderer.shadowMap.enabled = true
 	renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
-	renderer.setPixelRatio(2)
+	// renderer.setPixelRatio(2)
+	renderer.setPixelRatio(window.devicePixelRatio * 0.5)
 	renderer.setClearColor(scene.fog.color)
 	root.append(renderer.domElement)
 	renderer.domElement.tabIndex = 0
@@ -75,7 +79,7 @@ function init(root: HTMLDivElement) {
 
 	// debugger
 	const cannonDebugger = new CannonEsDebuggerPro(scene, world, {
-		// scale: 1.005,
+		scale: 1.002,
 		onInit: (body, obj3d, shape) => {
 			console.log(`init body-${body.id} shape-${shape.id} obj3d-${obj3d.id}`)
 		},
@@ -86,7 +90,7 @@ function init(root: HTMLDivElement) {
 
 	const axes = new THREE.AxesHelper(100)
 	axes.position.set(0.01, 0.01, 0.01)
-	scene.add(axes)
+	// scene.add(axes)
 
 	// bodies
 
@@ -154,6 +158,16 @@ function init(root: HTMLDivElement) {
 			console.log("manual update")
 			cannonDebugger.update()
 		},
+		screenshot: () => {
+			const url = renderer.domElement.toDataURL(
+				'image/png',
+				100
+			)
+			const a = document.createElement('a')
+			a.href= url
+			a.download = Date.now().toString()
+			a.click()
+		}
 	} as const
 
 	for (let key in btns) {
@@ -332,7 +346,7 @@ function addHeightfield(props: {
 		)
 	)
 	body.position.set(0, depth, -6)
-	body.quaternion.setFromEuler(-Math.PI / 2, 0, 0)
+	body.quaternion.setFromEuler(-Math.PI / 2, 0, -Math.PI / 2)
 	props.world.addBody(body)
 
 	// Graphics
