@@ -7,12 +7,6 @@ import { HeightfieldShapeGeometry } from "./geometries/HeightfieldShapeGeometry"
 import { PlaneGridGeometry } from "./geometries/PlaneGridGeometry"
 import { SphereShapeGeometry } from "./geometries/SphereShapeGeometry"
 
-const _vt = new CANNON.Vec3()
-const _qt = new CANNON.Quaternion()
-const _sphereShapeGeometry = new SphereShapeGeometry(1)
-const _boxEdgesGeometry = new BoxShapeGeometry(1, 1, 1)
-const _planeGridGeometry = new PlaneGridGeometry(100, 20, 0.001)
-
 type ComplexShape = CANNON.Shape & { geometryId?: number }
 
 type GraphicObj3D = THREE.Object3D & {
@@ -32,18 +26,25 @@ export type CannonEsDebuggerProEventMap = {
 	}
 }
 
-const _event: {
-	[K in keyof CannonEsDebuggerProEventMap]: { type: K } & Partial<
-		CannonEsDebuggerProEventMap[K]
-	>
-} = {
-	init: { type: "init" },
-	update: { type: "update" },
-}
-
 /**
- * This is improved pro debugger for [cannon-es](https://github.com/pmndrs/cannon-es)
- * with [three](https://github.com/pmndrs/cannon-es) to visualize all bodies and its shapes of physics world.
+ * {@link CannonEsDebuggerPro} is improved and reworked pro debugger for {@link https://github.com/pmndrs/cannon-es | cannon-es} 
+ * using {@link https://github.com/mrdoob/three.js | three.js} to visualize all bodies and its shapes of physics world.
+ * @see {@link https://github.com/vladkrutenyuk/cannon-es-debugger-pro | Source}
+ * @see {@link https://npmjs.com/@vladkrutenyuk/cannon-es-debugger-pro | The page of npm package}
+ * @example
+ * ```typescript
+ * import * as THREE from 'three'
+ * import * as CANNON from 'cannon-es'
+ * import { CannonEsDebuggerPro } from '@vladkrutenyuk/cannon-es-debugger-pro'
+ *
+ * const world = new CANNON.World()
+ * const scene = new THREE.Scene()
+ *
+ * const root = new THREE.Group() // or any another THREE.Object3D like
+ * scene.add(root)
+ *
+ * const cannonDebugger = new CannonEsDebuggerPro(root, world, 0xe60c0c, 0.01)
+ * ```
  */
 export default class CannonEsDebuggerPro extends THREE.EventDispatcher<CannonEsDebuggerProEventMap> {
 	private readonly _material: THREE.MeshBasicMaterial
@@ -54,16 +55,30 @@ export default class CannonEsDebuggerPro extends THREE.EventDispatcher<CannonEsD
 	private _graphicObjs: GraphicObj3D[] = []
 
 	private _isVisible = true
+	/**
+	 * Flag to check instance's visibility. Read-only. Default is `true`
+	 * @remarks Use method {@link CannonEsDebuggerPro.setVisible | setVisible()} to change it.
+	 */
 	public get isVisible() {
 		return this._isVisible
 	}
 
 	private _isDestroyed = false
+	/**
+	 * Flag to check if instance was destroyed. Read-only. Default is `false`
+	 * @remarks Use method {@link CannonEsDebuggerPro.destroy | destroy()} to destroy instance.
+	 */
 	public get isDestroyed() {
 		return this._isDestroyed
 	}
 
 	private _color: THREE.ColorRepresentation
+	/**
+	 * Current lines color of debug graphics objects. Read-only. Default is `0x00ff00` (green).
+	 * @readonly
+	 * @default 0x00ff00
+	 * @remarks Use method {@link CannonEsDebuggerPro.setColor | setColor()} to change it.
+	 */
 	public get color() {
 		return this._color
 	}
@@ -71,36 +86,27 @@ export default class CannonEsDebuggerPro extends THREE.EventDispatcher<CannonEsD
 	private readonly _offset = {
 		value: 0,
 	}
+	/**
+	 * Current value in meters to push up geometries vertices along its normals of debug graphics objects.
+	 * Read-only. Default is 0.005.
+	 * @readonly
+	 * @default 0.005
+	 * @remarks Use method {@link CannonEsDebuggerPro.setOffset | setOffset()} to change it.
+	 */
 	public get offset() {
 		return this._offset.value
 	}
 
 	/**
+	 * Create a new instance of {@link CannonEsDebuggerPro}
 	 * This is improved pro debugger for [cannon-es](https://github.com/pmndrs/cannon-es)
 	 * with [three](https://github.com/pmndrs/cannon-es) to visualize all bodies and its shapes of physics world.
-	 * @param {THREE.Object3D} root - any THREE.Object3D root which will contain debug 3d objects of this instance.
-	 * @param {CANNON.World} world - Physics `cannon-es` world you need to debug.
-	 * @param {DebugOptions | undefined} options - optional.
-	 * @param {THREE.ColorRepresentation} options.color - Sets the wireframe color for debug 3d objects. Default is `0x00ff00` (green).
-	 * @param {number} options.scale - Scale factor for all debug 3d objects. Default is `1`.
-	 * @param {function} options.onInit - Callback function that runs once, right after a new debug 3d object is added.
-	 * @param {function} options.onUpdate - Callback function that runs on every subsequent animation frame.
-	 * @example
-	 * import * as THREE from 'three'
-	 * import * as CANNON from 'cannon-es'
-	 * import { CannonEsDebuggerPro } from '@vladkrutenyuk/cannon-es-debugger-pro'
-	 *
-	 * const world = new CANNON.World()
-	 * const scene = new THREE.Scene()
-	 *
-	 * const root = new THREE.Group() // or any another THREE.Object3D like
-	 * scene.add(root)
-	 *
-	 * // `options` is optional arg ;)
-	 * const options = {
-	 * 	color: 0xe60c0c // or 'rgb(228, 14, 88)', '#e60c0c', 'red'
-	 * }
-	 * const cannonDebugger = new CannonEsDebuggerPro(root, world, options)
+	 * @param {THREE.Object3D} root Root which is any implementation of {@link THREE.Object3D} to be parent container of debug graphic objects for this instance.
+	 * @param {CANNON.World} world Instance of {@link CANNON.World} you need to debug.
+	 * @param {THREE.ColorRepresentation} color (optional) Sets the lines color for debug graphic objects.
+	 * Expects a {@link THREE.ColorRepresentation}. Default is `0x00ff00` (green).
+	 * @param {number} offset (optional) Value in meters to push up geometries vertices along its normals of debug graphics objects 
+	 * to prevent overlapping with source scene objects. Float value with recommended range of hundredths `~0.01` or thousandths `~0.001`. Expects a `Float`. Default is `0.005`. 
 	 */
 	constructor(
 		root: THREE.Object3D,
@@ -257,9 +263,11 @@ export default class CannonEsDebuggerPro extends THREE.EventDispatcher<CannonEsD
 	}
 
 	/**
-	 * @description The `update()` method needs to be called after `cannon` physics world's step
+	 * The {@link CannonEsDebuggerPro.update | update()} method needs to be called 
+	 * after `cannon` physics world's step
 	 * and before `three.js` render to update its state.
 	 * @example
+	 * ```typescript
 	 * const animate = () => {
 	 * 	requestAnimationFrame(animate)
 	 *
@@ -268,6 +276,8 @@ export default class CannonEsDebuggerPro extends THREE.EventDispatcher<CannonEsD
 	 * 	renderer.render(scene, camera) // Render the three.js scene
 	 * }
 	 * animate()
+	 * ```
+	 * @remarks It won't work after {@link CannonEsDebuggerPro.destroy | destroy()}.
 	 */
 	update() {
 		if (this._isDestroyed) return
@@ -325,8 +335,9 @@ export default class CannonEsDebuggerPro extends THREE.EventDispatcher<CannonEsD
 	}
 
 	/**
-	 * @param {THREE.ColorRepresentation} color
-	 * @description Set wireframe color of debug 3d objects.
+	 * Set lines color of debug graphic objects.
+	 * @param {THREE.ColorRepresentation} color.
+	 * @remark Use read-only {@link CannonEsDebuggerPro.color | color} property to know current value.
 	 */
 	setColor(color: THREE.ColorRepresentation) {
 		this._material.color.set(color)
@@ -337,8 +348,9 @@ export default class CannonEsDebuggerPro extends THREE.EventDispatcher<CannonEsD
 	}
 
 	/**
+	 * Set visibility of debug graphic objects. It doesn't remove and dispose anything.
 	 * @param {boolean} isVisible
-	 * @description Use to hide or show back debugs. It doesn't remove and dispose anything.
+	 * @remark Use read-only {@link CannonEsDebuggerPro.isVisible | isVisible} property to know current value.
 	 */
 	setVisible(isVisible: boolean) {
 		this._isVisible = isVisible
@@ -347,18 +359,19 @@ export default class CannonEsDebuggerPro extends THREE.EventDispatcher<CannonEsD
 	}
 
 	/**
-	 * @param {boolean} isVisible
-	 * @description Set geometry offset for all debug 3d objects to prevent overlapping with source graphics.
+	 * Set value in meters to push up geometries vertices along its normals of debug graphics objects.
+	 * @param {number} offset Float value with recommended range of hundredths `~0.01` or thousandths `~0.001`.
+	 * @remark Use read-only {@link CannonEsDebuggerPro.offset | offset} property to know current value.
 	 */
 	setOffset(offset: number) {
 		this._offset.value = offset
 	}
 
 	/**
-	 * @description Removes all debug 3d objects and does `dispose` for all created geometries
-	 * of complex shapes. Shared materials won't be disposed and the `update()` method will be still working.
+	 * Removes all debug 3d objects and does `dispose` for all created geometries
+	 * of complex shapes. Shared materials won't be disposed and the {@link CannonEsDebuggerPro.update | update()} method will be still working.
 	 * You are able to continue using this instance after calling the method.
-	 * If you want to destroy instance fully not to use it anymore then use `destroy()`.
+	 * If you want to destroy instance fully not to use it anymore then use {@link CannonEsDebuggerPro.destroy | destroy()}.
 	 */
 	clear() {
 		this._graphicObjs = []
@@ -372,9 +385,10 @@ export default class CannonEsDebuggerPro extends THREE.EventDispatcher<CannonEsD
 	}
 
 	/**
-	 * @description The method `destroy()` is called to remove all created debug 3d objects and
+	 * The method is called to remove all created debug 3d objects and
 	 * dispose all created geometries for complex shapes and shared materials of this instance.
-	 * After calling `destroy()` the method `update()` won't work anymore and property (read-only) `isDestroyed` will become `true`.
+	 * After calling {@link CannonEsDebuggerPro.destroy | destroy()} the method {@link CannonEsDebuggerPro.update | update()} won't work anymore 
+	 * and property {@link CannonEsDebuggerPro.isDestroyed | isDestroyed} will become `true`.
 	 */
 	destroy() {
 		this._isDestroyed = true
@@ -385,3 +399,18 @@ export default class CannonEsDebuggerPro extends THREE.EventDispatcher<CannonEsD
 		this._lineMaterial.dispose()
 	}
 }
+
+const _event: {
+	[K in keyof CannonEsDebuggerProEventMap]: { type: K } & Partial<
+		CannonEsDebuggerProEventMap[K]
+	>
+} = {
+	init: { type: "init" },
+	update: { type: "update" },
+}
+
+const _vt = new CANNON.Vec3()
+const _qt = new CANNON.Quaternion()
+const _sphereShapeGeometry = new SphereShapeGeometry(1)
+const _boxEdgesGeometry = new BoxShapeGeometry(1, 1, 1)
+const _planeGridGeometry = new PlaneGridGeometry(100, 20, 0.001)

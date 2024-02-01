@@ -1,12 +1,6 @@
 import * as THREE from "three"
 
 export class BoxShapeGeometry extends THREE.BufferGeometry {
-     /**
-     * Create a new instance of {@link BoxShapeGeometry}
-     * @param width Width; that is, the length of the edges parallel to the X axis. Optional; Expects a `Float`. Default `1`
-     * @param height Height; that is, the length of the edges parallel to the Y axis. Optional; Expects a `Float`. Default `1`
-     * @param depth Depth; that is, the length of the edges parallel to the Z axis. Optional; Expects a `Float`. Default `1`
-     */
 	constructor(width: number = 1, height: number = 1, depth: number = 1) {
 		super()
         const positionArray = buildArray(width,height,depth)
