@@ -79,7 +79,6 @@ function init(root: HTMLDivElement) {
 
 	// debugger
 	const cannonDebugger = new CannonEsDebuggerPro(scene, world, {
-		scale: 1.002,
 		onInit: (body, obj3d, shape) => {
 			console.log(`init body-${body.id} shape-${shape.id} obj3d-${obj3d.id}`)
 		},
@@ -142,6 +141,10 @@ function init(root: HTMLDivElement) {
 	})
 	gui.addColor({ color: "#00ff00" }, "color").onChange((color) => {
 		cannonDebugger.setColor(color)
+	})
+	const offsetObj = {offset: 0.005 }
+	gui.add(offsetObj, 'offset', 0, 0.2, 0.001).onChange((value) => {
+		cannonDebugger.setOffset(value)
 	})
 	gui.add(autoUpdateObj, "autoUpdate").name("Auto update")
 

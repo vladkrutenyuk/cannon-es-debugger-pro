@@ -3,15 +3,12 @@ import * as THREE from "three"
 import { DebugOptions } from "./DebugOptions"
 import { PlaneGridGeometry } from "./helpers/PlaneGridGeometry"
 import { SphereShapeGeometry } from "./helpers/SphereShapeGeometry"
+import { BoxEdgesGeometry } from "./helpers/BoxEdgesGeometry"
 
-const _v0 = new CANNON.Vec3()
-const _v1 = new CANNON.Vec3()
-const _v2 = new CANNON.Vec3()
-const _q0 = new CANNON.Quaternion()
+const _vt = new CANNON.Vec3()
+const _qt = new CANNON.Quaternion()
 const _sphereShapeGeometry = new SphereShapeGeometry(1)
-const _boxGeometry = new THREE.BoxGeometry(1, 1, 1)
-const _boxEdgesGeometry = new THREE.EdgesGeometry(_boxGeometry)
-_boxGeometry.dispose()
+const _boxEdgesGeometry = new BoxEdgesGeometry(1,1,1)
 const _planeGridGeometry = new PlaneGridGeometry(100, 20, 0.001)
 
 type ComplexShape = CANNON.Shape & { geometryId?: number }
@@ -28,7 +25,6 @@ export default class CannonEsDebuggerPro {
 
 	private readonly _options: DebugOptions = {
 		color: 0x00ff00,
-		scale: 1,
 	}
 	private _objs3d: THREE.Object3D[] = []
 
@@ -44,6 +40,14 @@ export default class CannonEsDebuggerPro {
 
 	public get isDestroyed() {
 		return this._isDestroyed
+	}
+
+	private readonly _offset = {
+		value: 0.005
+	}
+
+	public get offset() {
+		return this._offset.value
 	}
 
 	/**
@@ -84,7 +88,43 @@ export default class CannonEsDebuggerPro {
 			wireframe: true,
 			toneMapped: false,
 		})
+		this._material.onBeforeCompile = (program) => {
+			program.uniforms._offset = this._offset
+			program.vertexShader = program.vertexShader
+				.replace(
+					/*glsl*/ `#include <common>`,
+					/*glsl*/ `
+						#include <common>
+						uniform float _offset;
+					`
+				)
+				.replace(
+					/*glsl*/ `#include <begin_vertex>`,
+					/*glsl*/ `
+						#include <begin_vertex>
+						transformed += normal * _offset;
+						`
+				)
+		}
 		this._lineMaterial = new THREE.LineBasicMaterial({ color, toneMapped: false })
+		this._lineMaterial.onBeforeCompile = (program) => {
+			program.uniforms._offset = this._offset
+			program.vertexShader = program.vertexShader
+				.replace(
+					/*glsl*/ `#include <common>`,
+					/*glsl*/ `
+						#include <common>
+						uniform float _offset;
+					`
+				)
+				.replace(
+					/*glsl*/ `#include <begin_vertex>`,
+					/*glsl*/ `
+						#include <begin_vertex>
+						transformed += normal * _offset;
+						`
+				)
+		}
 	}
 
 	private createObj3d(shape: CANNON.Shape): THREE.Object3D {
@@ -113,8 +153,16 @@ export default class CannonEsDebuggerPro {
 					(shape as CANNON.Cylinder).height,
 					(shape as CANNON.Cylinder).numSegments
 				)
+				removeDuplicatedVerteciesAndMakeItSmooth(geometry)
 				obj3d = new THREE.Mesh(geometry, material)
 				this.registerComplexShapeWithObj3d(obj3d, shape, geometry)
+				
+				// const geometry = createConvexPolyhedronGeometry(
+				// 	shape as CANNON.ConvexPolyhedron
+				// )
+				// obj3d = new THREE.Mesh(geometry, this._material)
+				// this.registerComplexShapeWithObj3d(obj3d, shape, geometry)
+
 				break
 			}
 			case CONVEXPOLYHEDRON: {
@@ -157,41 +205,24 @@ export default class CannonEsDebuggerPro {
 	}
 
 	private scaleObj3d(obj3d: THREE.Object3D, shape: CANNON.Shape | ComplexShape): void {
-		const scale = this._options.scale ?? 1
 		const { SPHERE, BOX, PLANE, CYLINDER, CONVEXPOLYHEDRON, TRIMESH, HEIGHTFIELD } =
 			CANNON.Shape.types
 		switch (shape.type) {
 			case SPHERE: {
 				const { radius } = shape as CANNON.Sphere
-				obj3d.scale.set(radius * scale, radius * scale, radius * scale)
+				obj3d.scale.set(radius, radius, radius)
 				break
 			}
 			case BOX: {
 				obj3d.scale.copy(
 					(shape as CANNON.Box).halfExtents as unknown as THREE.Vector3
 				)
-				obj3d.scale.multiplyScalar(2 * scale)
-				break
-			}
-			case PLANE: {
-				break
-			}
-			case CYLINDER: {
-				obj3d.scale.set(1 * scale, 1 * scale, 1 * scale)
-				break
-			}
-			case CONVEXPOLYHEDRON: {
-				obj3d.scale.set(1 * scale, 1 * scale, 1 * scale)
+				obj3d.scale.multiplyScalar(2)
 				break
 			}
 			case TRIMESH: {
 				obj3d.scale
 					.copy((shape as CANNON.Trimesh).scale as unknown as THREE.Vector3)
-					.multiplyScalar(scale)
-				break
-			}
-			case HEIGHTFIELD: {
-				obj3d.scale.set(1 * scale, 1 * scale, 1 * scale)
 				break
 			}
 		}
@@ -249,8 +280,8 @@ export default class CannonEsDebuggerPro {
 	update() {
 		if (this._isDestroyed) return
 
-		const shapeWorldPosition = _v0
-		const shapeWorldQuaternion = _q0
+		const shapeWorldPosition = _vt
+		const shapeWorldQuaternion = _qt
 
 		let obj3dIndex = 0
 
@@ -292,6 +323,10 @@ export default class CannonEsDebuggerPro {
 		this._objs3d.length = obj3dIndex
 	}
 
+	/**
+	 * @param {THREE.ColorRepresentation} color
+	 * @description Set wireframe color of debug 3d objects.
+	 */
 	setColor(color: THREE.ColorRepresentation) {
 		this._material.color.set(color)
 		this._lineMaterial.color.set(color)
@@ -308,6 +343,14 @@ export default class CannonEsDebuggerPro {
 		this._isVisible = isVisible
 		this._objsGroup.visible = isVisible
 		return this
+	}
+
+	/**
+	 * @param {boolean} isVisible
+	 * @description Set geometry offset for all debug 3d objects to prevent overlapping with source graphics.
+	 */
+	setOffset(offset: number) {
+		this._offset.value = offset
 	}
 
 	/**
@@ -342,61 +385,129 @@ export default class CannonEsDebuggerPro {
 	}
 }
 
-function createTrimeshGeometry(shape: CANNON.Trimesh): THREE.BufferGeometry {
-	const geometry = new THREE.BufferGeometry()
-	const positions: number[] = []
-	const v0 = _v0
-	const v1 = _v1
-	const v2 = _v2
+function formatCoord(num: number) {
+	if (Math.abs(num) < 1e-10) {
+		return "0"
+	}
+	return num.toString()
+}
 
-	for (let i = 0; i < shape.indices.length / 3; i++) {
-		shape.getTriangleVertices(i, v0, v1, v2)
-		positions.push(v0.x, v0.y, v0.z)
-		positions.push(v1.x, v1.y, v1.z)
-		positions.push(v2.x, v2.y, v2.z)
+function buildVertexKey(x: number, y: number, z: number) {
+	return `${formatCoord(x)},${formatCoord(y)},${formatCoord(z)}`
+}
+
+function createComplexShapeGeoemtry(
+	shapeIndices: Int16Array | number[],
+	shapeVertices: Float32Array | number[]
+): THREE.BufferGeometry {
+	const geometry = new THREE.BufferGeometry()
+
+	const positions = []
+	const indices = []
+	const verticesMap = new Map()
+
+	let index = 0
+
+	for (let i = 0; i < shapeIndices.length; i += 3) {
+		for (let j = 0; j < 3; j++) {
+			const idx = shapeIndices[i + j]
+
+			const x = shapeVertices[idx * 3]
+			const y = shapeVertices[idx * 3 + 1]
+			const z = shapeVertices[idx * 3 + 2]
+			const vertexKey = buildVertexKey(x, y, z)
+
+			if (verticesMap.has(vertexKey)) {
+				indices.push(verticesMap.get(vertexKey))
+			} else {
+				positions.push(x, y, z)
+				verticesMap.set(vertexKey, index)
+				indices.push(index)
+				index++
+			}
+		}
 	}
 
+	geometry.setIndex(indices)
 	geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3))
-	geometry.computeBoundingSphere()
+	geometry.computeVertexNormals()
+	geometry.computeBoundingBox()
+	return geometry
+}
+
+function removeDuplicatedVerteciesAndMakeItSmooth(
+	geometry: THREE.BufferGeometry
+): THREE.BufferGeometry {
+	const srcVertices = geometry.attributes.position.array
+	const srcIndices = geometry.index ? Array.from(geometry.index.array) : null
+
+	if(!srcIndices) return geometry
+
+	const positions = [] as number[]
+	const indices = [] as number[]
+	const verticesMap = new Map()
+
+	let index = 0
+
+	for (let i = 0; i < srcIndices.length; i += 3) {
+		for (let j = 0; j < 3; j++) {
+			const idx = srcIndices[i + j]
+
+			const x = srcVertices[idx * 3]
+			const y = srcVertices[idx * 3 + 1]
+			const z = srcVertices[idx * 3 + 2]
+			const vertexKey = buildVertexKey(x, y, z)
+
+			if (verticesMap.has(vertexKey)) {
+				indices.push(verticesMap.get(vertexKey))
+			} else {
+				positions.push(x, y, z)
+				verticesMap.set(vertexKey, index)
+				indices.push(index)
+				index++
+			}
+		}
+	}
+
+	geometry.setIndex(indices)
+	geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3))
 	geometry.computeVertexNormals()
 	return geometry
+}
+
+
+function createTrimeshGeometry(shape: CANNON.Trimesh): THREE.BufferGeometry {
+	return createComplexShapeGeoemtry(shape.indices, shape.vertices)
 }
 
 function createConvexPolyhedronGeometry(
 	shape: CANNON.ConvexPolyhedron
 ): THREE.BufferGeometry {
-	const geometry = new THREE.BufferGeometry()
-
-	// Add vertices
-	const positions: number[] = []
-	for (let i = 0; i < shape.vertices.length; i++) {
-		const vertex = shape.vertices[i]
-		positions.push(vertex.x, vertex.y, vertex.z)
-	}
-	geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3))
-
-	// Add faces
-	const indices: number[] = []
+	const shapeIndices: number[] = []
 	for (let i = 0; i < shape.faces.length; i++) {
 		const face = shape.faces[i]
 		const a = face[0]
 		for (let j = 1; j < face.length - 1; j++) {
 			const b = face[j]
 			const c = face[j + 1]
-			indices.push(a, b, c)
+			shapeIndices.push(a, b, c)
 		}
 	}
 
-	geometry.setIndex(indices)
-	geometry.computeBoundingSphere()
-	geometry.computeVertexNormals()
-	return geometry
+	const shapeVerticies = [] as number[]
+	for (let i = 0; i < shape.vertices.length; i++) {
+		const vertex = shape.vertices[i]
+		shapeVerticies.push(vertex.x, vertex.y, vertex.z)
+	}
+
+	return createComplexShapeGeoemtry(shapeIndices, shapeVerticies)
 }
 
 function createHeightfieldGeometry(shape: CANNON.Heightfield): THREE.BufferGeometry {
 	const geometry = new THREE.BufferGeometry()
 	const s = shape.elementSize || 1
 	const vertices = [] as number[]
+	const normals = [] as number[]
 
 	for (let xi = 0; xi < shape.data.length; xi++) {
 		for (let yi = 0; yi < shape.data[xi].length; yi++) {
@@ -404,17 +515,27 @@ function createHeightfieldGeometry(shape: CANNON.Heightfield): THREE.BufferGeome
 				// horiz
 				vertices.push(xi * s, yi * s, shape.data[xi][yi])
 				vertices.push((xi + 1) * s, yi * s, shape.data[xi + 1][yi])
+				normals.push(0, 0, 1)
+				normals.push(0, 0, 1)
 			}
 			if (yi < shape.data[xi].length - 1) {
 				// vetical
 				vertices.push(xi * s, yi * s, shape.data[xi][yi])
 				vertices.push(xi * s, (yi + 1) * s, shape.data[xi][yi + 1])
+				normals.push(0, 0, 1)
+				normals.push(0, 0, 1)
 			}
 		}
 	}
 
-	const float32Array = new Float32Array(vertices)
-	geometry.setAttribute("position", new THREE.Float32BufferAttribute(float32Array, 3))
+	geometry.setAttribute(
+		"position",
+		new THREE.Float32BufferAttribute(new Float32Array(vertices), 3)
+	)
+	geometry.setAttribute(
+		"normal",
+		new THREE.Float32BufferAttribute(new Float32Array(normals), 3)
+	)
 	return geometry
 }
 

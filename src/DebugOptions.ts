@@ -8,10 +8,10 @@ export interface DebugOptions {
 	 */
 	color?: THREE.ColorRepresentation
 	/**
-	 * Scale factor for all debug 3d objects.
-	 * Default is 1
+	 * Geometry offset for all debug 3d objects to prevent overlapping with source graphics.
+	 * Default is 0.005.
 	 */
-	scale?: number
+	offset?: number
 	/**
 	 * Callback function that runs once, right after a new debug 3d object is added.
 	 */
