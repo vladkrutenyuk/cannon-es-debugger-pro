@@ -1,5 +1,4 @@
-import CannonEsDebuggerPro from "./CannonEsDebuggerPro"
-import type { DebugOptions } from "./DebugOptions"
+import CannonEsDebuggerPro, { CannonEsDebuggerProEventMap } from "./CannonEsDebuggerPro"
 
-export type { DebugOptions }
+export type { CannonEsDebuggerProEventMap }
 export { CannonEsDebuggerPro }

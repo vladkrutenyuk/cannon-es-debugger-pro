@@ -3,6 +3,7 @@ import * as THREE from "three"
 import CannonEsDebuggerPro from "../CannonEsDebuggerPro"
 import * as LILGUI from "three/examples/jsm/libs/lil-gui.module.min"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
+import { TransformControls } from "three/examples/jsm/controls/TransformControls.js"
 
 console.log("demo.ts")
 
@@ -23,7 +24,7 @@ function init(root: HTMLDivElement) {
 		logarithmicDepthBuffer: true,
 		powerPreference: "high-performance",
 		precision: "highp",
-		preserveDrawingBuffer: true
+		preserveDrawingBuffer: true,
 	})
 	renderer.shadowMap.enabled = true
 	renderer.shadowMap.type = THREE.PCFSoftShadowMap
@@ -36,8 +37,20 @@ function init(root: HTMLDivElement) {
 	renderer.domElement.style.touchAction = "none"
 	renderer.domElement.focus()
 
-	// orbit controls
+	// controls
 	const orbitControls = new OrbitControls(camera, renderer.domElement)
+	const transformControlsTarget = new THREE.Group()
+	scene.add(transformControlsTarget)
+	const transformControls = new TransformControls(camera, renderer.domElement)
+	transformControls.addEventListener("mouseDown", () => {
+		orbitControls.enabled = false
+	})
+	transformControls.addEventListener("mouseUp", () => {
+		orbitControls.enabled = true
+		const {x,y,z} = transformControlsTarget.position
+		console.log(`${x.toFixed(2)}, ${y.toFixed(2)} ${z.toFixed(2)}`)
+	})
+	scene.add(transformControls)
 
 	// Lights
 	const ambientLight = new THREE.AmbientLight(0xffffff, 0.05)
@@ -49,8 +62,8 @@ function init(root: HTMLDivElement) {
 	spotLight.castShadow = true
 	scene.add(spotLight)
 
-	spotLight.shadow.mapSize.width = 1024;  // Увеличьте для лучшего качества
-	spotLight.shadow.mapSize.height = 1024; // Увеличьте для лучшего качества
+	spotLight.shadow.mapSize.width = 1024 // Увеличьте для лучшего качества
+	spotLight.shadow.mapSize.height = 1024 // Увеличьте для лучшего качества
 
 	// Resizing
 	const resizeHandler = () => {
@@ -78,10 +91,11 @@ function init(root: HTMLDivElement) {
 	world.solver = new CANNON.SplitSolver(solver)
 
 	// debugger
-	const cannonDebugger = new CannonEsDebuggerPro(scene, world, {
-		onInit: (body, obj3d, shape) => {
-			console.log(`init body-${body.id} shape-${shape.id} obj3d-${obj3d.id}`)
-		},
+	const cannonDebugger = new CannonEsDebuggerPro(scene, world)
+	cannonDebugger.addEventListener("init", (event) => {
+		console.log(
+			`init obj3d-${event.obj3d.id} body-${event.body.id} shape-${event.shape.id}`
+		)
 	})
 	const autoUpdateObj = {
 		autoUpdate: true,
@@ -103,7 +117,10 @@ function init(root: HTMLDivElement) {
 			meshes.push(mesh)
 		},
 	}
-	addBox(bodyProps)
+	// body.position.set(2, 2, 0.5)
+
+	addBox(bodyProps, new THREE.Vector3().setScalar(1), new THREE.Vector3(2, 2, 0.5))
+	addBox(bodyProps, new THREE.Vector3(0.8, 0.4, 0.5), new THREE.Vector3(2.61, 2, -1.04))
 	addCylinder(bodyProps)
 	addHeightfield(bodyProps)
 	addPlane(bodyProps)
@@ -142,11 +159,19 @@ function init(root: HTMLDivElement) {
 	gui.addColor({ color: "#00ff00" }, "color").onChange((color) => {
 		cannonDebugger.setColor(color)
 	})
-	const offsetObj = {offset: 0.005 }
-	gui.add(offsetObj, 'offset', 0, 0.2, 0.001).onChange((value) => {
+	const offsetObj = { offset: 0.005 }
+	gui.add(offsetObj, "offset", 0, 0.2, 0.001).onChange((value) => {
 		cannonDebugger.setOffset(value)
 	})
 	gui.add(autoUpdateObj, "autoUpdate").name("Auto update")
+	const transformsObj = { transforms: false }
+	gui.add(transformsObj, "transforms").onChange((value) => {
+		if (value) {
+			transformControls.attach(transformControlsTarget)
+		} else {
+			transformControls.detach()
+		}
+	})
 
 	const btns = {
 		clear: () => {
@@ -162,15 +187,12 @@ function init(root: HTMLDivElement) {
 			cannonDebugger.update()
 		},
 		screenshot: () => {
-			const url = renderer.domElement.toDataURL(
-				'image/png',
-				100
-			)
-			const a = document.createElement('a')
-			a.href= url
+			const url = renderer.domElement.toDataURL("image/png", 100)
+			const a = document.createElement("a")
+			a.href = url
 			a.download = Date.now().toString()
 			a.click()
-		}
+		},
 	} as const
 
 	for (let key in btns) {
@@ -210,19 +232,20 @@ function addBox(props: {
 	world: CANNON.World
 	scene: THREE.Scene
 	callback?: (body: CANNON.Body, mesh: THREE.Mesh) => void
-}) {
-	const size = 1
+}, size: THREE.Vector3, pos: THREE.Vector3 = new THREE.Vector3()) {
+	// const size = 1
 
 	// Physics
-	const halfExtents = new CANNON.Vec3(size * 0.5, size * 0.5, size * 0.5)
+	const halfExtents = new CANNON.Vec3(size.x * 0.5, size.y * 0.5, size.z * 0.5)
 	const shape = new CANNON.Box(halfExtents)
 	const body = new CANNON.Body({ mass })
 	body.addShape(shape)
-	body.position.set(2, 2, 0.5)
+	// body.position.set(2, 2, 0.5)
+	body.position.set(pos.x,pos.y,pos.z)
 	props.world.addBody(body)
 
 	// Graphics
-	const geometry = new THREE.BoxGeometry(size, size, size)
+	const geometry = new THREE.BoxGeometry(size.x, size.y, size.z)
 	const mesh = new THREE.Mesh(geometry, material)
 	// position and quaternion of the mesh are set by updateMeshPositions...
 	mesh.castShadow = true

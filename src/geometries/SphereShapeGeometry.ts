@@ -30,5 +30,7 @@ export class SphereShapeGeometry extends THREE.BufferGeometry {
 
 		this.setAttribute("position", new THREE.Float32BufferAttribute(veticies, 3))
 		this.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3))
+		this.computeBoundingBox()
+		this.computeBoundingSphere()
 	}
 }
