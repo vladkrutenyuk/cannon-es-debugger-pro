@@ -365,6 +365,7 @@ export default class CannonEsDebuggerPro extends THREE.EventDispatcher<CannonEsD
 	 */
 	setOffset(offset: number) {
 		this._offset.value = offset
+		return this
 	}
 
 	/**
@@ -413,4 +414,4 @@ const _vt = new CANNON.Vec3()
 const _qt = new CANNON.Quaternion()
 const _sphereShapeGeometry = new SphereShapeGeometry(1)
 const _boxEdgesGeometry = new BoxShapeGeometry(1, 1, 1)
-const _planeGridGeometry = new PlaneGridGeometry(100, 20, 0.001)
+const _planeGridGeometry = new PlaneGridGeometry(100, 20)

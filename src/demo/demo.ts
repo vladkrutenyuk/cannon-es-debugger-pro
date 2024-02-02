@@ -4,6 +4,8 @@ import CannonEsDebuggerPro from "../CannonEsDebuggerPro"
 import * as LILGUI from "three/examples/jsm/libs/lil-gui.module.min"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js"
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
+import CannonDebugger from "./cannon-es-debugger"
 
 console.log("demo.ts")
 
@@ -47,8 +49,9 @@ function init(root: HTMLDivElement) {
 	})
 	transformControls.addEventListener("mouseUp", () => {
 		orbitControls.enabled = true
-		const {x,y,z} = transformControlsTarget.position
-		console.log(`${x.toFixed(2)}, ${y.toFixed(2)} ${z.toFixed(2)}`)
+		const { x, y, z } = transformControlsTarget.position
+		console.log(`${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}`)
+		navigator.clipboard.writeText(`${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}`)
 	})
 	scene.add(transformControls)
 
@@ -91,8 +94,11 @@ function init(root: HTMLDivElement) {
 	world.solver = new CANNON.SplitSolver(solver)
 
 	// debugger
-	const cannonDebugger = new CannonEsDebuggerPro(scene, world)
-	cannonDebugger.addEventListener("init", (event) => {
+	const oldCannonDebuggerRoot = new THREE.Group()
+	scene.add(oldCannonDebuggerRoot)
+	const oldCannonDebugger = CannonDebugger(oldCannonDebuggerRoot, world)
+	const cannonEsDebuggerPro = new CannonEsDebuggerPro(scene, world)
+	cannonEsDebuggerPro.addEventListener("init", (event) => {
 		console.log(
 			`init obj3d-${event.obj3d.id} body-${event.body.id} shape-${event.shape.id}`
 		)
@@ -115,17 +121,44 @@ function init(root: HTMLDivElement) {
 		callback: (body: CANNON.Body, mesh: THREE.Mesh) => {
 			bodies.push(body)
 			meshes.push(mesh)
+			mesh.userData.bodyIndex = bodies.length - 1
 		},
 	}
 	// body.position.set(2, 2, 0.5)
 
-	addBox(bodyProps, new THREE.Vector3().setScalar(1), new THREE.Vector3(2, 2, 0.5))
-	addBox(bodyProps, new THREE.Vector3(0.8, 0.4, 0.5), new THREE.Vector3(2.61, 2, -1.04))
-	addCylinder(bodyProps)
-	addHeightfield(bodyProps)
-	addPlane(bodyProps)
-	addSphere(bodyProps)
-	addTrimesh(bodyProps)
+	const createRotQuat = (deg: number) => {
+		return new THREE.Quaternion().setFromAxisAngle(
+			new THREE.Vector3(0, 1, 0),
+			THREE.MathUtils.DEG2RAD * deg
+		)
+	}
+
+	const createPos = (x: number, y: number, z: number) => {
+		return new THREE.Vector3(x, 2, z)
+	}
+
+	const initBodies = () => {
+		addBox(bodyProps, new THREE.Vector3().setScalar(1), new THREE.Vector3(2, 2, 0.5))
+		addBox(bodyProps, new THREE.Vector3(0.8, 0.4, 0.5), createPos(2.61, 2, -1.04))
+		addCylinder(bodyProps, createPos(-1.4, 0.0, 0.69))
+		addHeightfield(bodyProps)
+		addPlane(bodyProps)
+		addSphere(bodyProps, createPos(0.16, 2.0, -0.2), 0.7, createRotQuat(-10))
+		addSphere(bodyProps, createPos(1.12, 2.0, -1.52), 0.35, createRotQuat(20))
+		addTorusTrimesh(bodyProps, createPos(-3.29, 0.0, 0.93))
+		addSuzanneTrimesh(
+			bodyProps,
+			new THREE.Vector3(-2.54, 2.0, -1.23),
+			createRotQuat(-20)
+		)
+		addSuzanneConvexHull(
+			bodyProps,
+			createPos(0.23, 0.0, 2.47),
+			createRotQuat(40),
+			0.7
+		)
+	}
+	initBodies()
 
 	const updateMeshPositions = () => {
 		for (let i = 0; i < meshes.length; i++) {
@@ -138,11 +171,15 @@ function init(root: HTMLDivElement) {
 
 	// animate
 
+	let _update = () => {
+		cannonEsDebuggerPro.update()
+	}
+
 	const animate = () => {
 		requestAnimationFrame(animate)
 
 		world.fixedStep()
-		autoUpdateObj.autoUpdate && cannonDebugger.update()
+		autoUpdateObj.autoUpdate && _update()
 		updateMeshPositions()
 		renderer.render(scene, camera)
 	}
@@ -154,14 +191,16 @@ function init(root: HTMLDivElement) {
 
 	const visibleObj = { visible: true }
 	gui.add(visibleObj, "visible").onChange((visible) => {
-		cannonDebugger.setVisible(visible)
+		cannonEsDebuggerPro.setVisible(visible)
 	})
 	gui.addColor({ color: "#00ff00" }, "color").onChange((color) => {
-		cannonDebugger.setColor(color)
+		oldCannonDebugger.setColor(color)
+		cannonEsDebuggerPro.setColor(color)
 	})
 	const offsetObj = { offset: 0.005 }
 	gui.add(offsetObj, "offset", 0, 0.2, 0.001).onChange((value) => {
-		cannonDebugger.setOffset(value)
+		oldCannonDebugger.setScale(1 + value)
+		cannonEsDebuggerPro.setOffset(value)
 	})
 	gui.add(autoUpdateObj, "autoUpdate").name("Auto update")
 	const transformsObj = { transforms: false }
@@ -176,15 +215,15 @@ function init(root: HTMLDivElement) {
 	const btns = {
 		clear: () => {
 			console.log("clear")
-			cannonDebugger.clear()
+			cannonEsDebuggerPro.clear()
 		},
 		destroy: () => {
 			console.log("destroy")
-			cannonDebugger.destroy()
+			cannonEsDebuggerPro.destroy()
 		},
 		update: () => {
 			console.log("manual update")
-			cannonDebugger.update()
+			cannonEsDebuggerPro.update()
 		},
 		screenshot: () => {
 			const url = renderer.domElement.toDataURL("image/png", 100)
@@ -198,16 +237,45 @@ function init(root: HTMLDivElement) {
 	for (let key in btns) {
 		gui.add(btns, key as keyof typeof btns)
 	}
+
+	const versionObj = {
+		version: "new",
+	}
+	const versionOptions = {
+		New: "new",
+		Old: "old",
+	}
+	gui.add(versionObj, "version", versionOptions).onChange(value => {
+		switch (value) {
+			case 'new': {
+				oldCannonDebuggerRoot.visible = false
+				cannonEsDebuggerPro.setVisible(true)
+				_update = () => {
+					cannonEsDebuggerPro.update()
+				}
+				break
+			}
+			case 'old': {
+				oldCannonDebuggerRoot.visible = true
+				cannonEsDebuggerPro.setVisible(false)
+				_update = () => {
+					oldCannonDebugger.update()
+				}
+				break
+			}
+		}
+	})
 }
 
 const mass = 7
 const material = new THREE.MeshStandardMaterial({ color: "#ccc" })
 
-function addPlane(props: {
+type AddSmthProps = {
 	world: CANNON.World
 	scene: THREE.Scene
 	callback?: (body: CANNON.Body, mesh: THREE.Mesh) => void
-}) {
+}
+function addPlane(props: AddSmthProps) {
 	// Physics
 	const shape = new CANNON.Plane()
 	const body = new CANNON.Body({ mass: 0 })
@@ -228,11 +296,15 @@ function addPlane(props: {
 	props.callback && props.callback(body, mesh)
 }
 
-function addBox(props: {
-	world: CANNON.World
-	scene: THREE.Scene
-	callback?: (body: CANNON.Body, mesh: THREE.Mesh) => void
-}, size: THREE.Vector3, pos: THREE.Vector3 = new THREE.Vector3()) {
+function addBox(
+	props: {
+		world: CANNON.World
+		scene: THREE.Scene
+		callback?: (body: CANNON.Body, mesh: THREE.Mesh) => void
+	},
+	size: THREE.Vector3,
+	pos: THREE.Vector3 = new THREE.Vector3()
+) {
 	// const size = 1
 
 	// Physics
@@ -241,7 +313,7 @@ function addBox(props: {
 	const body = new CANNON.Body({ mass })
 	body.addShape(shape)
 	// body.position.set(2, 2, 0.5)
-	body.position.set(pos.x,pos.y,pos.z)
+	body.position.set(pos.x, pos.y, pos.z)
 	props.world.addBody(body)
 
 	// Graphics
@@ -255,22 +327,22 @@ function addBox(props: {
 	props.callback && props.callback(body, mesh)
 }
 
-function addSphere(props: {
-	world: CANNON.World
-	scene: THREE.Scene
-	callback?: (body: CANNON.Body, mesh: THREE.Mesh) => void
-}) {
-	const size = 0.7
-
+function addSphere(
+	props: AddSmthProps,
+	pos: THREE.Vector3,
+	radius: number,
+	quat?: THREE.Quaternion
+) {
 	// Physics
 	const body = new CANNON.Body({ mass })
-	const shape = new CANNON.Sphere(size)
+	const shape = new CANNON.Sphere(radius)
 	body.addShape(shape)
-	body.position.set(-0.5, 2, -1)
+	body.position.copy(pos as any)
+	quat && body.quaternion.copy(quat as any)
 	props.world.addBody(body)
 
 	// Graphics
-	const geometry = new THREE.SphereGeometry(size)
+	const geometry = new THREE.SphereGeometry(radius)
 	const mesh = new THREE.Mesh(geometry, material)
 	// position and quaternion of the mesh are set by updateMeshPositions...
 	mesh.castShadow = true
@@ -280,11 +352,7 @@ function addSphere(props: {
 	props.callback && props.callback(body, mesh)
 }
 
-function addCylinder(props: {
-	world: CANNON.World
-	scene: THREE.Scene
-	callback?: (body: CANNON.Body, mesh: THREE.Mesh) => void
-}) {
+function addCylinder(props: AddSmthProps, pos: THREE.Vector3) {
 	const size = 1
 	const radialSegments = 15
 
@@ -292,7 +360,7 @@ function addCylinder(props: {
 	const body = new CANNON.Body({ mass })
 	const shape = new CANNON.Cylinder(size * 0.5, size * 0.5, size, radialSegments)
 	body.addShape(shape)
-	body.position.set(0, 2, 1.5)
+	body.position.copy(pos as any)
 	props.world.addBody(body)
 
 	// Graphics
@@ -311,11 +379,7 @@ function addCylinder(props: {
 	props.callback && props.callback(body, mesh)
 }
 
-function addTrimesh(props: {
-	world: CANNON.World
-	scene: THREE.Scene
-	callback?: (body: CANNON.Body, mesh: THREE.Mesh) => void
-}) {
+function addTorusTrimesh(props: AddSmthProps, pos: THREE.Vector3) {
 	const radius = 1
 	const tube = 0.3
 	const radialSegments = 16
@@ -324,7 +388,7 @@ function addTrimesh(props: {
 	const body = new CANNON.Body({ mass })
 	const shape = CANNON.Trimesh.createTorus(radius, tube, radialSegments, 16)
 	body.addShape(shape)
-	body.position.set(-3, 2, -1)
+	body.position.copy(pos as unknown as CANNON.Vec3)
 	body.quaternion.setFromEuler(Math.PI * 0.1, 0, 0)
 	props.world.addBody(body)
 
@@ -339,11 +403,7 @@ function addTrimesh(props: {
 	props.callback && props.callback(body, mesh)
 }
 
-function addHeightfield(props: {
-	world: CANNON.World
-	scene: THREE.Scene
-	callback?: (body: CANNON.Body, mesh: THREE.Mesh) => void
-}) {
+function addHeightfield(props: AddSmthProps) {
 	const sizeX = 20 // number of vertices in the X axis
 	const sizeY = 20 // number of vertices in the Y axis
 	const elementSize = 0.3 // cell width
@@ -401,6 +461,79 @@ function addHeightfield(props: {
 	props.scene.add(mesh)
 
 	props.callback && props.callback(body, mesh)
+}
+
+const gltfLoader = new GLTFLoader()
+async function addSuzanneTrimesh(
+	props: AddSmthProps,
+	pos: THREE.Vector3,
+	quat?: THREE.Quaternion
+) {
+	const gltf = await gltfLoader.loadAsync("/Suzanne.glb")
+	const mesh = gltf.scene.children[0] as THREE.Mesh
+	mesh.material = material
+	props.scene.add(mesh)
+
+	const indicies = mesh.geometry.getIndex()?.array
+	const verticies = mesh.geometry.getAttribute("position")?.array
+	if (!verticies || !indicies) return
+
+	const body = new CANNON.Body({ mass })
+	const shape = new CANNON.Trimesh(Array.from(verticies), Array.from(indicies))
+	body.addShape(shape)
+	body.position.copy(pos as unknown as CANNON.Vec3)
+	quat && body.quaternion.copy(quat as any)
+	props.world.addBody(body)
+
+	props.callback && props.callback(body, mesh)
+}
+
+async function addSuzanneConvexHull(
+	props: AddSmthProps,
+	pos: THREE.Vector3,
+	quat?: THREE.Quaternion,
+	scale?: number
+) {
+	// put these .glb models to '/demo-build' folder
+	const suzanneGltf = await gltfLoader.loadAsync("/Suzanne.glb")
+	const suzanneConvexHullGltf = await gltfLoader.loadAsync("/SuzanneConvexHull.glb")
+
+	const suzanneMesh = suzanneGltf.scene.children[0] as THREE.Mesh
+	scale && suzanneMesh.geometry.scale(scale, scale, scale)
+	suzanneMesh.material = material
+	props.scene.add(suzanneMesh)
+
+	const suzanneConvexHullMesh = suzanneConvexHullGltf.scene.children[0] as THREE.Mesh
+	scale && suzanneConvexHullMesh.geometry.scale(scale, scale, scale)
+	const indicies = Array.from(suzanneConvexHullMesh.geometry.getIndex()?.array ?? [])
+	const verticies = Array.from(
+		suzanneConvexHullMesh.geometry.getAttribute("position")?.array ?? []
+	)
+	const verticiesVec3Array = [] as CANNON.Vec3[]
+	for (let i = 0; i < verticies.length; i += 3) {
+		verticiesVec3Array.push(
+			new CANNON.Vec3(verticies[i], verticies[i + 1], verticies[i + 2])
+		)
+	}
+	const faces = [] as number[][]
+	for (let i = 0; i < indicies.length; i += 3) {
+		const idx1 = indicies[i]
+		const idx2 = indicies[i + 1]
+		const idx3 = indicies[i + 2]
+		faces.push([idx1, idx2, idx3])
+	}
+
+	const body = new CANNON.Body({ mass })
+	const shape = new CANNON.ConvexPolyhedron({
+		faces,
+		vertices: verticiesVec3Array,
+	})
+	body.addShape(shape)
+	body.position.copy(pos as unknown as CANNON.Vec3)
+	quat && body.quaternion.copy(quat as unknown as CANNON.Quaternion)
+	props.world.addBody(body)
+
+	props.callback && props.callback(body, suzanneMesh)
 }
 
 const root = document.querySelector("#root") as HTMLDivElement | null
