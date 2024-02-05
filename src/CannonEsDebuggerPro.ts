@@ -139,20 +139,20 @@ export class CannonEsDebuggerPro extends THREE.EventDispatcher<CannonEsDebuggerP
 			program.uniforms._offset = this._offset;
 			program.vertexShader = program.vertexShader
 				.replace(
-					/*glsl*/ `#include <common>`,
-					/*glsl*/ `
-						#include <common>
-						uniform float _offset;
-					`
+					"#include <common>",
+					// prettier-ignore
+					[
+						"#include <common>", 
+						"uniform float _offset;"
+					].join("\n")
 				)
 				.replace(
-					/*glsl*/ `#include <begin_vertex>`,
+					"#include <begin_vertex>",
 					[
 						"#include <begin_vertex>",
 						"transformed += normalize(normal) * _offset;",
 					].join("\n")
 				);
-			
 		};
 		this._material.onBeforeCompile = onBeforeCompile;
 		this._lineMaterial.onBeforeCompile = onBeforeCompile;
