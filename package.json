@@ -1,6 +1,6 @@
 {
   "name": "@vladkrutenyuk/cannon-es-debugger-pro",
-  "version": "0.2.0",
+  "version": "0.2.4",
   "source": "src/index.ts",
   "scripts": {
     "build": "rimraf dist & parcel build",
