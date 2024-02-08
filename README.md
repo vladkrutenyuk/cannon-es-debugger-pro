@@ -44,21 +44,21 @@ pnpm add three cannon-es
 #### Initialization 
 
 ```ts
-import * as THREE from 'three'
-import * as CANNON from 'cannon-es'
-import { CannonEsDebuggerPro } from '@vladkrutenyuk/cannon-es-debugger-pro'
+import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
+import { CannonEsDebuggerPro } from '@vladkrutenyuk/cannon-es-debugger-pro';
 
-const world = new CANNON.World()
-const scene = new THREE.Scene()
-const root = new THREE.Group() // or any another THREE.Object3D like
-scene.add(root)
+const world = new CANNON.World();
+const scene = new THREE.Scene();
+const root = new THREE.Group(); // or any another THREE.Object3D like
+scene.add(root);
 
 // optional, default is 0x00ff00
-const color = 0xe60c0c // or 'rgb(228, 14, 88)', '#e60c0c', 'red'
+const color = 0xe60c0c; // or 'rgb(228, 14, 88)', '#e60c0c', 'red'
 // optional, defailt is 0.005
-const offset = 0.009
+const offset = 0.009;
 
-const cannonDebugger = new CannonEsDebuggerPro(root, world, color, offset)
+const cannonDebugger = new CannonEsDebuggerPro(root, world, color, offset);
 ```
 
 #### Update
@@ -67,13 +67,13 @@ The `update()` method needs to be called after `cannon` physics world's step and
 
 ```ts
 const animate = () => {
-  requestAnimationFrame(animate)
+  requestAnimationFrame(animate);
 
-  world.step(timeStep) // Update cannon-es physics
-  cannonDebugger.update() // Update the CannonEsDebuggerPro
-  renderer.render(scene, camera) // Render the three.js scene
-}
-animate()
+  world.step(timeStep); // Update cannon-es physics
+  cannonDebugger.update(); // Update the CannonEsDebuggerPro
+  renderer.render(scene, camera); // Render the three.js scene
+};
+animate();
 ```
 
 
@@ -131,13 +131,13 @@ The method `destroy()` is called to remove all created debug 3d objects and disp
 After calling `destroy()` the method `update()` won't work anymore and property (read-only) `isDestroyed` will become `true`.
 
 ```ts
-cannonDebugger.update() // update happened
+cannonDebugger.update(); // update happened
 
-cannonDebugger.isDestroyed // > false
-cannonDebugger.destroy() // remove all debug 3d objects and dispose its geometries, materials
-cannonDebugger.isDestroyed // > true
+cannonDebugger.isDestroyed; // > false
+cannonDebugger.destroy(); // remove all debug 3d objects and dispose its geometries, materials
+cannonDebugger.isDestroyed; // > true
 
-cannonDebugger.update() // and now it does nothing
+cannonDebugger.update(); // and now it does nothing
 ```
 
 If you need just clear scene from debugs but you still need this cannon debugger instance then you are able to use `clear()` method. It does the same but shared materials won't be disposed and the `update()` method will be still working.
@@ -146,10 +146,10 @@ But oftenly, it's necessary to hide and show back debugs. In this case the bette
 
 ```ts
 // hide
-cannonDebugger.setVisible(false)
+cannonDebugger.setVisible(false);
 
 // show back
-cannonDebugger.setVisible(true)
+cannonDebugger.setVisible(true);
 ```
 
 ## 4. Events
@@ -166,22 +166,22 @@ cannonDebugger = new CannonDebugger(scene, world, {
     onUpdate: (body, obj3d, shape) => {
         console.log('updated')
     }   
-})
+});
 ```
 
 😎👍 now in `@vladkrutenyuk/cannon-es-debugger-pro`
 ```typescript
-cannonDebugger = new CannonEsDebuggerPro(root, world)
+cannonDebugger = new CannonEsDebuggerPro(root, world);
 
 cannonDebugger.addEventListener('init', (event) => {
     const { body, obj3d, shape } = event
     console.log(`inited obj-${obj3d.id} body-${body.id} shape-${shape.id}`)
-})
+});
 
 cannonDebugger.addEventListener('update', (event) => {
     const { body, obj3d, shape } = event
     console.log(`updated obj-${obj3d.id} body-${body.id} shape-${shape.id}`)
-})
+});
 ```
 
 ## 5. Typing and implementation
@@ -201,13 +201,13 @@ cannonDebugger.addEventListener('update', (event) => {
 function CannonDebugger(scene: THREE.Scene, ...) { ... }
 
 // thus, we need this to create typed variable:
-cannonDebugger: ReturnType<typeof CannonDebugger>
+cannonDebugger: ReturnType<typeof CannonDebugger>;
 
-this.cannonDebugger = new CannonDebugger(...)
+this.cannonDebugger = new CannonDebugger(...);
 
 // also, it provides only THREE.Scene as root:
-const root = new THREE.Group()
-new CannonDebugger(root, ...) //! TypeError
+const root = new THREE.Group();
+new CannonDebugger(root, ...); //! TypeError
 
 ```
 
@@ -224,12 +224,12 @@ class CannonEsDebuggerPro {
 
 // thus
 class AnyYourClass {
-    cannonDebuggerPro: CannonEsDebuggerPro
+    cannonDebuggerPro: CannonEsDebuggerPro;
 
     constructor() {
         // able to use any THREE.Object3D
-        const root = new THREE.Group()
-        this.cannonDebuggerPro = new CannonEsDebuggerPro(root, ...)
+        const root = new THREE.Group();
+        this.cannonDebuggerPro = new CannonEsDebuggerPro(root, ...);
     }
 }
 ```
@@ -239,23 +239,23 @@ class AnyYourClass {
 **Kind of API.**
 
 ```ts
-import * as THREE from 'three'
-import * as CANNON from 'cannon-es'
+import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
 
 // Helper types for THREE.EventDispatcher
 export type CannonEsDebuggerProEventMap = {
 	init: {
-		body: CANNON.Body
-		obj3d: THREE.Object3D
-		shape: CANNON.Shape
-	}
+		body: CANNON.Body;
+		obj3d: THREE.Object3D;
+		shape: CANNON.Shape;
+	};
 	update: {
-		body: CANNON.Body
-		obj3d: THREE.Object3D
-		shape: CANNON.Shape
-	}
-}
-type CannonEsDebuggerProEventType = Extract<keyof CannonEsDebuggerProEventMap, string>
+		body: CANNON.Body;
+		obj3d: THREE.Object3D;
+		shape: CANNON.Shape;
+	};
+};
+type CannonEsDebuggerProEventType = Extract<keyof CannonEsDebuggerProEventMap, string>;
 
 export class CannonEsDebuggerPro extends THREE.EventDispatcher<CannonEsDebuggerProEventMap> {
     constructor(
@@ -263,37 +263,37 @@ export class CannonEsDebuggerPro extends THREE.EventDispatcher<CannonEsDebuggerP
         world: CANNON.World,
         color: THREE.ColorRepresentation = 0x00ff00,
         offset: number = 0.005
-    ): void
+    );
 
     // Accessors
-    get color(): THREE.ColorRepresentation
-    get offset(): number
-    get isVisible(): boolean
-    get isDestroyed(): boolean
+    get color(): THREE.ColorRepresentation;
+    get offset(): number;
+    get isVisible(): boolean;
+    get isDestroyed(): boolean;
 
     // Main methods
-    update(): void
-    clear(): void
-    destroy(): void
+    update(): void;
+    clear(): void;
+    destroy(): void;
 
     // Customization methods
-    setVisible(isVisible: boolean): this
-    setColor(color: THREE.ColorRepresentation): this
-    setOffset(offset: number): this
+    setVisible(isVisible: boolean): this;
+    setColor(color: THREE.ColorRepresentation): this;
+    setOffset(offset: number): this;
 
     // THREE.EventDispatcher methods
     addEventListener<T extends CannonEsDebuggerProEventType>(
         type: T,
         listener: THREE.EventListener<CannonEsDebuggerProEventMap[T], T, this>,
-    ): void
+    ): void;
     hasEventListener<T extends CannonEsDebuggerProEventType>(
         type: T,
         listener: THREE.EventListener<CannonEsDebuggerProEventMap[T], T, this>,
-    ): boolean
+    ): boolean;
     removeEventListener<T extends CannonEsDebuggerProEventType>(
         type: T,
         listener: THREE.EventListener<CannonEsDebuggerProEventMap[T], T, this>,
-    ): void
+    ): void;
 }
 ```
 
